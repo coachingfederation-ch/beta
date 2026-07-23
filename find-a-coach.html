@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Find a Coach — ICF Switzerland Directory</title>
+  <meta name="description" content="Search ICF Switzerland's directory of credentialed coaches, mentors and supervisors. Filter by credential, language, region and specialty.">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%232E3192'/%3E%3Ctext x='50' y='54' font-family='sans-serif' font-size='22' font-weight='800' fill='%23ffffff' text-anchor='middle' dominant-baseline='middle'%3EICF%3C/text%3E%3Ccircle cx='50' cy='72' r='3' fill='%2300ABC8'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="css/fonts.css">
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/site.css">
+</head>
+<body>
+  <div id="header-slot"></div>
+
+  <!-- ── PAGE HEADER ─────────────────────────────────────── -->
+  <div class="page-header">
+    <div class="page-header-inner">
+      <p class="icf-overline" style="margin-bottom:12px">ICF Switzerland Directory</p>
+      <h1 id="pageTitle">Find a credentialed coach</h1>
+      <p id="pageSubtitle">Every coach listed holds an active ICF credential and commits to the ICF Code of Ethics.</p>
+      <div class="service-tabs">
+        <button class="service-tab active" data-tab="coach">Find a coach</button>
+        <button class="service-tab" data-tab="mentor">Find a mentor</button>
+        <button class="service-tab" data-tab="supervisor">Find a supervisor</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── MAIN CONTENT ────────────────────────────────────── -->
+  <div class="content-area">
+    <!-- FILTER SIDEBAR -->
+    <aside class="filters">
+      <div class="filter-group">
+        <label class="input-label" for="searchInput">Search</label>
+        <input type="text" id="searchInput" class="icf-input" placeholder="Name, city, specialty…">
+      </div>
+      <div class="sep"></div>
+      <div class="filter-group">
+        <p class="filter-label">Credential</p>
+        <div class="filter-tags" id="credentialFilters"></div>
+      </div>
+      <div class="sep"></div>
+      <div class="filter-group">
+        <p class="filter-label">Language</p>
+        <div class="filter-tags" id="langFilters"></div>
+      </div>
+      <div class="sep"></div>
+      <div class="filter-group">
+        <label class="input-label" for="regionSelect">Canton / Region</label>
+        <select id="regionSelect" class="icf-select"></select>
+      </div>
+      <div class="sep"></div>
+      <div class="filter-group">
+        <p class="filter-label">Specialty</p>
+        <div class="filter-tags" id="specialtyFilters"></div>
+      </div>
+      <div class="sep"></div>
+      <div class="filter-group">
+        <label class="icf-checkbox">
+          <input type="checkbox" id="availableOnly"> Accepting new clients
+        </label>
+      </div>
+      <div id="clearContainer"></div>
+    </aside>
+
+    <!-- RESULTS -->
+    <div>
+      <div class="results-header">
+        <span class="results-count" id="resultsCount">Loading…</span>
+      </div>
+      <div class="coach-grid" id="coachGrid">
+        <div class="loading-state">
+          <div class="spinner"></div>
+          <p>Loading coaches…</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="footer-slot"></div>
+
+  <script type="module">
+    import { mountLayout } from './js/layout.js';
+    import { fetchCoaches, initials, credClass, REGIONS, SPECIALTIES, LANGUAGES, CREDENTIALS } from './js/supabase-client.js';
+
+    mountLayout('Find a Coach');
+
+    const state = {
+      tab: 'coach',
+      q: '',
+      credentials: [],
+      languages: [],
+      region: 'All cantons',
+      specialties: [],
+      availableOnly: false,
+      coaches: [],
+      loading: true,
+      error: null,
+    };
+
+    const TAB_LABELS = { coach: 'coaches', mentor: 'mentors', supervisor: 'supervisors' };
+    const TAB_TITLES = { coach: 'Find a credentialed coach', mentor: 'Find a mentor for coaches', supervisor: 'Find a supervisor for coaches' };
+    const TAB_SUBS = {
+      coach: 'Every coach listed holds an active ICF credential and commits to the ICF Code of Ethics.',
+      mentor: 'ICF-credentialed mentor coaches to help you develop your coaching skills and prepare for your credential.',
+      supervisor: 'Experienced supervisors supporting coaches through reflective practice, ethics and professional growth.',
+    };
+
+    function filterBtnCls(active) {
+      return active ? 'filter-btn on' : 'filter-btn';
+    }
+
+    function isDirty() {
+      return state.q || state.credentials.length > 0 || state.languages.length > 0 ||
+        (state.region && state.region !== 'All cantons') || state.specialties.length > 0 || state.availableOnly;
+    }
+
+    function getFiltered() {
+      return state.coaches.filter(c => {
+        if (state.availableOnly && !c.available) return false;
+        if (state.credentials.length && !state.credentials.includes(c.credential)) return false;
+        if (state.languages.length && !state.languages.some(l => c.languages.includes(l))) return false;
+        if (state.region && state.region !== 'All cantons' && c.city !== state.region) return false;
+        if (state.specialties.length && !state.specialties.some(s => c.specialties.includes(s))) return false;
+        if (state.q) {
+          const hay = (c.name + ' ' + c.city + ' ' + c.specialties.join(' ')).toLowerCase();
+          if (!hay.includes(state.q.toLowerCase())) return false;
+        }
+        return true;
+      });
+    }
+
+    function renderFilters() {
+      const credContainer = document.getElementById('credentialFilters');
+      credContainer.innerHTML = CREDENTIALS.map(c => {
+        const active = state.credentials.includes(c);
+        return `<button class="${filterBtnCls(active)}" data-cred="${c}">${c}</button>`;
+      }).join('');
+
+      const langContainer = document.getElementById('langFilters');
+      langContainer.innerHTML = LANGUAGES.map(l => {
+        const active = state.languages.includes(l);
+        return `<button class="${filterBtnCls(active)}" data-lang="${l}">${l}</button>`;
+      }).join('');
+
+      const specContainer = document.getElementById('specialtyFilters');
+      specContainer.innerHTML = SPECIALTIES.map(s => {
+        const active = state.specialties.includes(s);
+        return `<button class="${filterBtnCls(active)}" data-spec="${s}">${s}</button>`;
+      }).join('');
+
+      const regionSelect = document.getElementById('regionSelect');
+      regionSelect.innerHTML = REGIONS.map(r =>
+        `<option value="${r}"${r === state.region ? ' selected' : ''}>${r}</option>`
+      ).join('');
+
+      const clearContainer = document.getElementById('clearContainer');
+      clearContainer.innerHTML = isDirty() ? `<button class="filter-clear" id="clearBtn">&times; Clear all filters</button>` : '';
+
+      attachFilterListeners();
+    }
+
+    function attachFilterListeners() {
+      document.querySelectorAll('[data-cred]').forEach(btn => {
+        btn.addEventListener('click', () => toggleCredential(btn.dataset.cred));
+      });
+      document.querySelectorAll('[data-lang]').forEach(btn => {
+        btn.addEventListener('click', () => toggleLanguage(btn.dataset.lang));
+      });
+      document.querySelectorAll('[data-spec]').forEach(btn => {
+        btn.addEventListener('click', () => toggleSpecialty(btn.dataset.spec));
+      });
+
+      const clearBtn = document.getElementById('clearBtn');
+      if (clearBtn) clearBtn.addEventListener('click', clearFilters);
+    }
+
+    function toggleCredential(c) {
+      state.credentials = state.credentials.includes(c)
+        ? state.credentials.filter(x => x !== c)
+        : [...state.credentials, c];
+      renderFilters();
+      renderResults();
+    }
+
+    function toggleLanguage(l) {
+      state.languages = state.languages.includes(l)
+        ? state.languages.filter(x => x !== l)
+        : [...state.languages, l];
+      renderFilters();
+      renderResults();
+    }
+
+    function toggleSpecialty(s) {
+      state.specialties = state.specialties.includes(s)
+        ? state.specialties.filter(x => x !== s)
+        : [...state.specialties, s];
+      renderFilters();
+      renderResults();
+    }
+
+    function clearFilters() {
+      state.q = '';
+      state.credentials = [];
+      state.languages = [];
+      state.region = 'All cantons';
+      state.specialties = [];
+      state.availableOnly = false;
+      document.getElementById('searchInput').value = '';
+      document.getElementById('availableOnly').checked = false;
+      renderFilters();
+      renderResults();
+    }
+
+    function renderResults() {
+      const grid = document.getElementById('coachGrid');
+      const count = document.getElementById('resultsCount');
+
+      if (state.loading) {
+        grid.innerHTML = '<div class="loading-state"><div class="spinner"></div><p>Loading coaches…</p></div>';
+        count.textContent = 'Loading…';
+        return;
+      }
+
+      if (state.error) {
+        grid.innerHTML = `<div class="empty"><h3>Could not load coaches</h3><p>${state.error}</p></div>`;
+        count.textContent = '';
+        return;
+      }
+
+      const filtered = getFiltered();
+      const label = TAB_LABELS[state.tab];
+      count.textContent = `${filtered.length} ${label}${filtered.length !== 1 ? '' : ''}`;
+
+      if (filtered.length === 0) {
+        grid.innerHTML = '<div class="empty"><h3>No coaches match your filters</h3><p>Try widening your region, credential or specialty.</p></div>';
+        return;
+      }
+
+      grid.innerHTML = filtered.map(c => `
+        <div class="coach-card">
+          <div style="display:flex;align-items:center;gap:14px">
+            <div class="avatar">${initials(c.name)}</div>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:17px;font-weight:var(--fw-bold);color:var(--text-strong)">${c.name}</div>
+              <div style="display:flex;align-items:center;gap:8px;margin-top:4px;font-size:13px;color:var(--text-muted);font-weight:var(--fw-semibold)">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--icf-cyan-700)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+                ${c.city}
+                <span style="color:var(--border-strong)">&middot;</span>
+                ${c.languages.join(' &middot; ')}
+              </div>
+            </div>
+            <span class="${credClass(c.credential)}">${c.credential}</span>
+          </div>
+          <p style="font-size:14px;color:var(--text-body);line-height:1.55;margin:0">${c.bio}</p>
+          <div style="display:flex;flex-wrap:wrap;gap:6px">
+            ${c.specialties.map(s => `<span class="sp-tag">${s}</span>`).join('')}
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding-top:10px;border-top:1px solid var(--border-subtle)">
+            <div class="avail ${c.available ? 'avail-open' : 'avail-closed'}">
+              <span class="avail-dot ${c.available ? 'dot-open' : 'dot-closed'}"></span>
+              ${c.available ? 'Accepting new clients' : 'Waitlist only'}
+            </div>
+            <a href="#" class="btn btn-ghost">View profile</a>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function loadCoaches() {
+      state.loading = true;
+      state.error = null;
+      renderResults();
+      try {
+        state.coaches = await fetchCoaches(state.tab);
+      } catch (err) {
+        state.error = 'Please try again later.';
+        state.coaches = [];
+      }
+      state.loading = false;
+      renderResults();
+    }
+
+    function setTab(tab) {
+      state.tab = tab;
+      state.credentials = [];
+      state.specialties = [];
+      document.querySelectorAll('.service-tab').forEach(t => {
+        t.classList.toggle('active', t.dataset.tab === tab);
+      });
+      document.getElementById('pageTitle').textContent = TAB_TITLES[tab];
+      document.getElementById('pageSubtitle').textContent = TAB_SUBS[tab];
+      renderFilters();
+      loadCoaches();
+    }
+
+    // Event listeners
+    document.querySelectorAll('.service-tab').forEach(tab => {
+      tab.addEventListener('click', () => setTab(tab.dataset.tab));
+    });
+
+    document.getElementById('searchInput').addEventListener('input', (e) => {
+      state.q = e.target.value;
+      renderFilters();
+      renderResults();
+    });
+
+    document.getElementById('regionSelect').addEventListener('change', (e) => {
+      state.region = e.target.value;
+      renderFilters();
+      renderResults();
+    });
+
+    document.getElementById('availableOnly').addEventListener('change', (e) => {
+      state.availableOnly = e.target.checked;
+      renderFilters();
+      renderResults();
+    });
+
+    renderFilters();
+    loadCoaches();
+  </script>
+</body>
+</html>
