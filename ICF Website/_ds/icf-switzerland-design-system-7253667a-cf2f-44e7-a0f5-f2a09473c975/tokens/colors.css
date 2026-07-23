@@ -1,0 +1,96 @@
+/* ============================================================
+   ICF Switzerland — Color tokens
+   Brand: deep indigo + bright cyan, sampled from the official
+   ICF Switzerland Charter Chapter logo.
+   ============================================================ */
+
+:root {
+  /* --- Brand: Indigo (primary) --- */
+  --icf-indigo-950: #11154A;
+  --icf-indigo-900: #161B5C;
+  --icf-indigo-800: #1F2778;
+  --icf-indigo-700: #232C87;
+  --icf-indigo-600: #2B379B;   /* BASE — logo wordmark */
+  --icf-indigo-500: #3D49B0;
+  --icf-indigo-400: #6670C6;
+  --icf-indigo-300: #939BD8;
+  --icf-indigo-200: #C2C7EC;
+  --icf-indigo-100: #E2E5F6;
+  --icf-indigo-50:  #F1F2FB;
+
+  /* --- Brand: Cyan (accent) --- */
+  --icf-cyan-900: #00566A;
+  --icf-cyan-800: #00708A;
+  --icf-cyan-700: #008AA6;
+  --icf-cyan-600: #00ABC8;   /* BASE — logo dot + subline */
+  --icf-cyan-500: #16BAD6;
+  --icf-cyan-400: #4ECCE2;
+  --icf-cyan-300: #84DCEC;
+  --icf-cyan-200: #B6EBF4;
+  --icf-cyan-100: #DCF5F9;
+  --icf-cyan-50:  #EEFAFC;
+
+  /* --- Neutrals (cool grey, biased toward indigo) --- */
+  --neutral-950: #0D0E1A;
+  --neutral-900: #16172B;
+  --neutral-800: #24263F;
+  --neutral-700: #3A3C56;
+  --neutral-600: #54566F;
+  --neutral-500: #6F7188;
+  --neutral-400: #9698AC;
+  --neutral-300: #C2C4D2;
+  --neutral-200: #E0E2EC;
+  --neutral-150: #EAEBF2;
+  --neutral-100: #F2F3F8;
+  --neutral-50:  #F8F9FC;
+  --white: #FFFFFF;
+
+  /* --- Semantic status --- */
+  --green-600: #1E9E6A;
+  --green-100: #DEF4EA;
+  --amber-600: #E08A1E;
+  --amber-100: #FBEED6;
+  --red-600:   #D64550;
+  --red-100:   #FBE2E4;
+
+  /* ============================================================
+     Semantic aliases — prefer these in components
+     ============================================================ */
+
+  /* Brand */
+  --brand-primary:   var(--icf-indigo-600);
+  --brand-primary-strong: var(--icf-indigo-800);
+  --brand-accent:    var(--icf-cyan-600);
+  --brand-accent-strong: var(--icf-cyan-700);
+
+  /* Text */
+  --text-strong:  var(--icf-indigo-900);
+  --text-body:    var(--neutral-800);
+  --text-muted:   var(--neutral-500);
+  --text-subtle:  var(--neutral-400);
+  --text-accent:  var(--icf-cyan-800);
+  --text-on-dark: var(--white);
+  --text-on-dark-muted: var(--icf-indigo-200);
+  --text-link:    var(--icf-indigo-600);
+
+  /* Surfaces */
+  --surface-page:    var(--white);
+  --surface-subtle:  var(--neutral-50);
+  --surface-muted:   var(--neutral-100);
+  --surface-card:    var(--white);
+  --surface-indigo:  var(--icf-indigo-600);
+  --surface-indigo-deep: var(--icf-indigo-900);
+  --surface-cyan:    var(--icf-cyan-600);
+  --surface-cyan-soft: var(--icf-cyan-50);
+  --surface-indigo-soft: var(--icf-indigo-50);
+
+  /* Borders */
+  --border-subtle:  var(--neutral-150);
+  --border-default: var(--neutral-200);
+  --border-strong:  var(--neutral-300);
+  --border-brand:   var(--icf-indigo-200);
+  --border-on-dark: rgba(255, 255, 255, 0.22);
+
+  /* Focus ring */
+  --ring: var(--icf-cyan-500);
+}

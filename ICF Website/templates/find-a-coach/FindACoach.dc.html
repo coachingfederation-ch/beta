@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<!-- @template name="Find a Coach" description="Searchable coach directory with credential, region, language, specialty filters and three service types." -->
+<helmet>
+  <script src="./ds-base.js"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: var(--font-sans); background: var(--surface-page); }
+    .icf-overline { font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--icf-cyan-700); }
+
+    /* Page header */
+    .page-header { background: var(--surface-subtle); border-bottom: 1px solid var(--border-subtle); padding: 52px var(--gutter) 0; }
+    .page-header-inner { max-width: var(--container-xl); margin: 0 auto; }
+    .page-header h1 { font-size: clamp(28px,4vw,44px); font-weight: 800; letter-spacing: -0.025em; margin: 0 0 10px; color: var(--text-strong); }
+    .page-header p  { font-size: 17px; color: var(--text-muted); margin: 0 0 36px; max-width: 540px; }
+
+    /* Service tabs */
+    .service-tabs { display: flex; gap: 0; border-bottom: none; }
+    .service-tab  { padding: 14px 26px; font-size: 15px; font-weight: 700; border: none; background: transparent;
+                    cursor: pointer; font-family: var(--font-sans); color: var(--text-muted);
+                    border-bottom: 3px solid transparent; margin-bottom: -1px; transition: all 200ms ease; }
+    .service-tab:hover  { color: var(--icf-indigo-600); }
+    .service-tab.active { color: var(--icf-indigo-700); border-bottom-color: var(--icf-indigo-600); }
+
+    /* Layout */
+    .content-area { max-width: var(--container-xl); margin: 0 auto; padding: 36px var(--gutter) 80px; display: grid; grid-template-columns: 268px 1fr; gap: 40px; align-items: start; }
+
+    /* Filter sidebar */
+    .filters { position: sticky; top: 92px; display: flex; flex-direction: column; gap: 22px; }
+    .filter-group { display: flex; flex-direction: column; gap: 8px; }
+    .filter-label { font-size: 13px; font-weight: 700; color: var(--text-strong); margin: 0; }
+    .filter-tags  { display: flex; flex-wrap: wrap; gap: 7px; }
+    .filter-clear { font-size: 13px; font-weight: 700; color: var(--icf-indigo-600); background: none; border: none; cursor: pointer; font-family: var(--font-sans); padding: 0; }
+
+    /* Coach cards grid */
+    .results-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+    .results-count  { font-size: 14px; font-weight: 600; color: var(--text-muted); }
+    .coach-grid     { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .coach-card     { background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg);
+                      box-shadow: var(--shadow-sm); padding: 22px; display: flex; flex-direction: column; gap: 14px;
+                      cursor: pointer; transition: transform 200ms ease, box-shadow 200ms ease; }
+    .coach-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); }
+
+    /* Avatar */
+    .avatar { width: 52px; height: 52px; border-radius: 50%; background: var(--icf-indigo-100); color: var(--icf-indigo-700);
+               display: inline-flex; align-items: center; justify-content: center; font-weight: 800; font-size: 18px;
+               flex: none; box-shadow: inset 0 0 0 1px var(--icf-indigo-200); letter-spacing: -0.02em; }
+
+    /* Availability dot */
+    .avail-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex: none; }
+
+    /* Empty state */
+    .empty { grid-column: 1/-1; text-align: center; padding: 60px 0; }
+    .empty h3 { font-size: 18px; font-weight: 700; margin: 0 0 6px; color: var(--text-strong); }
+    .empty p  { font-size: 15px; color: var(--text-muted); margin: 0; }
+
+    /* Filter toggle buttons — active / inactive */
+    .filter-btn        { padding:6px 13px;border-radius:999px;font-size:13px;font-weight:600;border:1.5px solid var(--border-strong);background:var(--surface-card);color:var(--text-body);cursor:pointer;font-family:var(--font-sans); }
+    .filter-btn.on     { border-color:var(--icf-indigo-600);background:var(--icf-indigo-50);color:var(--icf-indigo-700);font-weight:700; }
+
+    /* Separator */
+    .sep { height: 1px; background: var(--border-subtle); }
+
+    /* Credential badges — static per value */
+    .cred { display:inline-flex;align-items:center;padding:4px 11px;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap;flex:none; }
+    .cred-ACC { background:var(--icf-cyan-100);  color:var(--icf-cyan-800); }
+    .cred-PCC { background:var(--icf-indigo-100);color:var(--icf-indigo-700); }
+    .cred-MCC { background:var(--icf-indigo-600);color:#fff; }
+
+    /* Availability */
+    .avail       { display:flex;align-items:center;gap:7px;font-size:13px;font-weight:600; }
+    .avail-open  { color:var(--green-600); }
+    .avail-closed{ color:var(--text-subtle); }
+    .dot-open    { background:var(--green-600); }
+    .dot-closed  { background:var(--neutral-300); }
+
+    /* Specialty micro-badge */
+    .sp-tag { display:inline-flex;align-items:center;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:600;background:var(--neutral-100);color:var(--neutral-700); }
+  </style>
+</helmet>
+
+<!-- ── SITE HEADER ─────────────────────────────────── -->
+<header data-screen-label="Navigation" style="position:sticky;top:0;z-index:50;background:rgba(255,255,255,0.9);backdrop-filter:blur(14px);border-bottom:1px solid var(--border-subtle)">
+  <div style="max-width:var(--container-2xl);margin:0 auto;padding:0 var(--gutter);height:76px;display:flex;align-items:center;gap:clamp(8px,1.5vw,24px)">
+    <a href="../website/Website.dc.html" style="display:flex;align-items:center;flex:none">
+      <img src="../../assets/logos/icf-switzerland-vertical-positive.png" alt="ICF Switzerland" style="height:52px">
+    </a>
+    <nav style="display:flex;align-items:center;gap:2px;flex:1 1 auto;min-width:0;overflow:hidden;white-space:nowrap">
+      <a href="#" style="padding:9px 13px;border-radius:999px;font-size:15px;font-weight:700;color:var(--icf-indigo-700);background:var(--icf-indigo-50);text-decoration:none">Find a Coach</a>
+      <a href="../website/Website.dc.html" style="padding:9px 13px;border-radius:999px;font-size:15px;font-weight:600;color:var(--text-body);text-decoration:none" style-hover="background:var(--icf-indigo-50);color:var(--icf-indigo-700)">For Organisations</a>
+      <a href="../website/Website.dc.html" style="padding:9px 13px;border-radius:999px;font-size:15px;font-weight:600;color:var(--text-body);text-decoration:none" style-hover="background:var(--icf-indigo-50);color:var(--icf-indigo-700)">For Coaches</a>
+      <a href="../website/Website.dc.html" style="padding:9px 13px;border-radius:999px;font-size:15px;font-weight:600;color:var(--text-body);text-decoration:none" style-hover="background:var(--icf-indigo-50);color:var(--icf-indigo-700)">Insights</a>
+      <a href="../website/Website.dc.html" style="padding:9px 13px;border-radius:999px;font-size:15px;font-weight:600;color:var(--text-body);text-decoration:none" style-hover="background:var(--icf-indigo-50);color:var(--icf-indigo-700)">Events</a>
+      <a href="../website/Website.dc.html" style="padding:9px 13px;border-radius:999px;font-size:15px;font-weight:600;color:var(--text-body);text-decoration:none" style-hover="background:var(--icf-indigo-50);color:var(--icf-indigo-700)">About</a>
+    </nav>
+    <div style="margin-left:auto;display:flex;align-items:center;gap:clamp(6px,1vw,14px);flex:none">
+      <span style="display:flex;align-items:center;gap:2px;font-size:13px;font-weight:600;color:var(--text-muted)">
+        <a href="#" style="padding:4px 6px;border-radius:6px;color:var(--icf-indigo-700);background:var(--icf-indigo-50);text-decoration:none">EN</a>
+        <a href="#" style="padding:4px 6px;border-radius:6px;color:var(--text-muted);text-decoration:none">DE</a>
+        <a href="#" style="padding:4px 6px;border-radius:6px;color:var(--text-muted);text-decoration:none">FR</a>
+        <a href="#" style="padding:4px 6px;border-radius:6px;color:var(--text-muted);text-decoration:none">IT</a>
+      </span>
+      <a href="#" aria-label="Search" style="display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:50%;color:var(--text-body)" style-hover="background:var(--surface-muted)">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+      </a>
+      <a href="#" style="font-size:15px;font-weight:600;color:var(--text-body);text-decoration:none">Member Login</a>
+      <x-import component-from-global-scope="ICFSwitzerlandDesignSystem_725366.Button" variant="primary" size="sm" hint-size="80px,44px">Join</x-import>
+    </div>
+  </div>
+</header>
+
+<!-- ── PAGE HEADER ─────────────────────────────────── -->
+<div class="page-header">
+  <div class="page-header-inner">
+    <p class="icf-overline" style="margin-bottom:12px">ICF Switzerland Directory</p>
+    <h1>{{ pageTitle }}</h1>
+    <p>{{ pageSubtitle }}</p>
+    <!-- Service type tabs -->
+    <div class="service-tabs">
+      <button class="{{ tab_coach_class }}" onclick="{{ setTabCoach }}">Find a coach</button>
+      <button class="{{ tab_mentor_class }}" onclick="{{ setTabMentor }}">Find a mentor</button>
+      <button class="{{ tab_supervisor_class }}" onclick="{{ setTabSupervisor }}">Find a supervisor</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MAIN CONTENT ────────────────────────────────── -->
+<div class="content-area">
+
+  <!-- FILTER SIDEBAR -->
+  <aside class="filters">
+
+    <!-- Search -->
+    <div class="filter-group">
+      <x-import component-from-global-scope="ICFSwitzerlandDesignSystem_725366.Input"
+        label="Search"
+        placeholder="Name, city, specialty…"
+        value="{{ q }}"
+        onchange="{{ onQ }}"
+        hint-size="100%,70px">
+      </x-import>
+    </div>
+
+    <div class="sep"></div>
+
+    <!-- Credential -->
+    <div class="filter-group">
+      <p class="filter-label">Credential</p>
+      <div class="filter-tags">
+        <sc-for list="{{ credentialOptions }}" as="c">
+          <button class="{{ c.cls }}" onclick="{{ c.toggle }}">{{ c.label }}</button>
+        </sc-for>
+      </div>
+    </div>
+
+    <div class="sep"></div>
+
+    <!-- Language -->
+    <div class="filter-group">
+      <p class="filter-label">Language</p>
+      <div class="filter-tags">
+        <sc-for list="{{ langOptions }}" as="l">
+          <button class="{{ l.cls }}" onclick="{{ l.toggle }}">{{ l.label }}</button>
+        </sc-for>
+      </div>
+    </div>
+
+    <div class="sep"></div>
+
+    <!-- Region (Canton) -->
+    <div class="filter-group">
+      <x-import component-from-global-scope="ICFSwitzerlandDesignSystem_725366.Select"
+        label="Canton / Region"
+        options="{{ regionOptions }}"
+        value="{{ region }}"
+        onchange="{{ onRegion }}"
+        hint-size="100%,70px">
+      </x-import>
+    </div>
+
+    <div class="sep"></div>
+
+    <!-- Specialty -->
+    <div class="filter-group">
+      <p class="filter-label">Specialty</p>
+      <div class="filter-tags">
+        <sc-for list="{{ specialtyOptions }}" as="s">
+          <button class="{{ s.cls }}" onclick="{{ s.toggle }}">{{ s.label }}</button>
+        </sc-for>
+      </div>
+    </div>
+
+    <div class="sep"></div>
+
+    <!-- Availability -->
+    <div class="filter-group">
+      <x-import component-from-global-scope="ICFSwitzerlandDesignSystem_725366.Checkbox"
+        label="Accepting new clients"
+        checked="{{ availableOnly }}"
+        onchange="{{ onAvailable }}"
+        hint-size="100%,32px">
+      </x-import>
+    </div>
+
+    <!-- Clear filters -->
+    <sc-if value="{{ isDirty }}" hint-placeholder-val="{{ false }}">
+      <button class="filter-clear" onclick="{{ clearFilters }}">× Clear all filters</button>
+    </sc-if>
+
+  </aside>
+
+  <!-- RESULTS -->
+  <div>
+    <div class="results-header">
+      <span class="results-count">{{ resultsLabel }}</span>
+    </div>
+    <div class="coach-grid">
+      <sc-for list="{{ coaches }}" as="coach" hint-placeholder-count="6">
+
+        <div class="coach-card">
+          <!-- Top row: avatar + name + credential -->
+          <div style="display:flex;align-items:center;gap:14px">
+            <div class="avatar">{{ coach.initials }}</div>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:17px;font-weight:700;color:var(--text-strong)">{{ coach.name }}</div>
+              <div style="display:flex;align-items:center;gap:8px;margin-top:4px;font-size:13px;color:var(--text-muted);font-weight:600">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--icf-cyan-700)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+                {{ coach.city }}
+                <span style="color:var(--border-strong)">·</span>
+                {{ coach.languages }}
+              </div>
+            </div>
+            <span class="{{ coach.credClass }}">{{ coach.credential }}</span>
+          </div>
+
+          <!-- Bio -->
+          <p style="font-size:14px;color:var(--text-body);line-height:1.55;margin:0">{{ coach.bio }}</p>
+
+          <!-- Specialty tags -->
+          <div style="display:flex;flex-wrap:wrap;gap:6px">
+            <sc-for list="{{ coach.specialtyBadges }}" as="sp">
+              <span class="sp-tag">{{ sp.label }}</span>
+            </sc-for>
+          </div>
+
+          <!-- Footer: availability + action -->
+          <div style="display:flex;align-items:center;justify-content:space-between;padding-top:10px;border-top:1px solid var(--border-subtle)">
+            <div class="{{ coach.availClass }}">
+              <span class="avail-dot {{ coach.dotClass }}"></span>
+              {{ coach.availLabel }}
+            </div>
+            <x-import component-from-global-scope="ICFSwitzerlandDesignSystem_725366.Button"
+              variant="ghost" size="sm" hint-size="110px,34px">View profile</x-import>
+          </div>
+        </div>
+
+      </sc-for>
+
+      <!-- Empty state -->
+      <sc-if value="{{ isEmpty }}" hint-placeholder-val="{{ false }}">
+        <div class="empty">
+          <h3>No coaches match your filters</h3>
+          <p>Try widening your region, credential or specialty.</p>
+        </div>
+      </sc-if>
+
+    </div>
+  </div>
+</div>
+
+<!-- ── SITE FOOTER ─────────────────────────────────── -->
+<footer data-screen-label="Footer" style="background:var(--icf-indigo-900);color:var(--icf-indigo-200)">
+  <div style="max-width:var(--container-2xl);margin:0 auto;padding:64px var(--gutter) 40px;display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr 1fr;gap:40px">
+    <div>
+      <img src="../../assets/logos/icf-switzerland-vertical-white.png" alt="ICF Switzerland" style="height:90px;margin-bottom:18px">
+      <p style="font-size:14px;line-height:1.7;max-width:280px;margin:0 0 20px;color:var(--icf-indigo-200)">Building a more human future through professional coaching.</p>
+      <div style="display:flex;gap:10px">
+        <a href="#" aria-label="LinkedIn" style="width:36px;height:36px;border-radius:50%;border:1px solid rgba(255,255,255,0.25);display:inline-flex;align-items:center;justify-content:center;color:#fff" style-hover="background:rgba(255,255,255,0.12)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M4.98 3.5C4.98 4.88 3.87 6 2.5 6S0 4.88 0 3.5 1.12 1 2.5 1s2.48 1.12 2.48 2.5ZM.2 8h4.6v14.5H.2V8Zm7.4 0h4.4v2h.06c.6-1.15 2.1-2.36 4.34-2.36 4.64 0 5.5 3.06 5.5 7.04v7.82h-4.6v-6.94c0-1.66-.03-3.8-2.3-3.8-2.3 0-2.66 1.8-2.66 3.67v7.07H7.6V8Z"></path></svg>
+        </a>
+        <a href="#" aria-label="Instagram" style="width:36px;height:36px;border-radius:50%;border:1px solid rgba(255,255,255,0.25);display:inline-flex;align-items:center;justify-content:center;color:#fff" style-hover="background:rgba(255,255,255,0.12)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2.5" y="2.5" width="19" height="19" rx="5"></rect><circle cx="12" cy="12" r="4.5"></circle><circle cx="17.6" cy="6.4" r="1.2" fill="currentColor" stroke="none"></circle></svg>
+        </a>
+        <a href="#" aria-label="YouTube" style="width:36px;height:36px;border-radius:50%;border:1px solid rgba(255,255,255,0.25);display:inline-flex;align-items:center;justify-content:center;color:#fff" style-hover="background:rgba(255,255,255,0.12)">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M23 7.2s-.22-1.56-.9-2.24c-.86-.9-1.82-.9-2.26-.96C16.7 3.78 12 3.78 12 3.78h-.01s-4.7 0-7.84.22c-.44.06-1.4.06-2.26.96C1.21 5.64 1 7.2 1 7.2S.78 9.03.78 10.87v1.7C.78 14.4 1 16.24 1 16.24s.21 1.56.89 2.24c.86.9 2 .87 2.5.97 1.8.17 7.61.22 7.61.22s4.71-.01 7.85-.23c.44-.05 1.4-.06 2.26-.96.68-.68.9-2.24.9-2.24s.21-1.83.21-3.67v-1.7C23.21 9.03 23 7.2 23 7.2ZM9.68 14.85V8.5l6.06 3.19-6.06 3.16Z"></path></svg>
+        </a>
+      </div>
+    </div>
+    <div>
+      <h4 style="color:#fff;font-size:13px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin:0 0 16px">Find a Coach</h4>
+      <ul style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:11px">
+        <li><a href="#" style="color:var(--icf-indigo-200);font-size:14px;text-decoration:none">Coach Directory</a></li>
+        <li><a href="#" style="color:var(--icf-indigo-200);font-size:14px;text-decoration:none">Why an ICF Coach?</a></li>
+        <li><a href="#" style="color:var(--icf-indigo-200);font-size:14px;text-decoration:none">What is Coaching?</a></li>
+        <li><a href="#" style="color:var(--icf-indigo-200);font-size:14px;text-decoration:none">FAQs</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4 style="color:#fff;font-size:13px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin:0 0 16px">Organisations</h4>
+      <ul style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:11px">
+        <li><a href="../website/Website.dc.html" style="color:var(--icf-indigo-200);font-size:14px;text-decoration:none">Why Coaching?</a></li>
+        <li><a href="#" style="color:var(--icf-indigo-200);font-size:14px;text-decoration:none">Executive Coaching</a></li>
+        <li><a href="#" style="color:var(--icf-indigo-200);font-size:14px;text-decoration:none">Team Coaching</a></li>
+        <li><a href="#" style="color:var(--icf-indigo-200);font-size:14px;text-decoration:none">Case Studies</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4 style="color:#fff;font-size:13px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin:0 0 16px">For Coaches</h4>
+      <ul style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:11px">
+        <li><a href="#" style="color:var(--icf-indigo-200);font-size:14px;text-decoration:none">Membership</a></li>
+        <li><a href="#" style="color:var(--icf-indigo-200);font-size:14px;text-decoration:none">Credentials</a></li>
+        <li><a href="#" style="color:var(--icf-indigo-200);font-size:14px;text-decoration:none">Communities</a></li>
+        <li><a href="#" style="color:var(--icf-indigo-200);font-size:14px;text-decoration:none">Mentoring &amp; Supervision</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4 style="color:#fff;font-size:13px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin:0 0 16px">About</h4>
+      <ul style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:11px">
+        <li><a href="../website/Website.dc.html" style="color:var(--icf-indigo-200);font-size:14px;text-decoration:none">Our Vision</a></li>
+        <li><a href="#" style="color:var(--icf-indigo-200);font-size:14px;text-decoration:none">Board</a></li>
+        <li><a href="#" style="color:var(--icf-indigo-200);font-size:14px;text-decoration:none">Partnerships</a></li>
+        <li><a href="#" style="color:var(--icf-indigo-200);font-size:14px;text-decoration:none">Contact</a></li>
+      </ul>
+    </div>
+  </div>
+  <div style="border-top:1px solid rgba(255,255,255,.14)">
+    <div style="max-width:var(--container-2xl);margin:0 auto;padding:20px var(--gutter);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;font-size:13px;color:var(--icf-indigo-300)">
+      <span>© 2026 ICF Switzerland Charter Chapter</span>
+      <span style="display:flex;gap:14px;align-items:center">
+        <a href="#" style="color:var(--icf-indigo-300);text-decoration:none">Deutsch</a>
+        <a href="#" style="color:var(--icf-indigo-300);text-decoration:none">Français</a>
+        <a href="#" style="color:var(--icf-indigo-300);text-decoration:none">Italiano</a>
+        <a href="#" style="color:#fff;text-decoration:none">English</a>
+      </span>
+      <span style="display:flex;gap:22px">
+        <a href="#" style="color:var(--icf-indigo-300);text-decoration:none">Privacy</a>
+        <a href="#" style="color:var(--icf-indigo-300);text-decoration:none">Code of Ethics</a>
+        <a href="#" style="color:var(--icf-indigo-300);text-decoration:none">Imprint</a>
+      </span>
+    </div>
+  </div>
+</footer>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{
+  &quot;$preview&quot;: { &quot;width&quot;: 1280, &quot;height&quot;: 900 }
+}">
+class Component extends DCLogic {
+  state = {
+    tab: 'coach',
+    q: '',
+    credentials: [],   // selected: 'ACC'|'PCC'|'MCC'
+    languages: [],     // selected: 'DE'|'FR'|'IT'|'EN'
+    region: 'All cantons',
+    specialties: [],   // selected specialty labels
+    availableOnly: false,
+  }
+
+  // ── Sample data ──────────────────────────────────────────
+  ALL_COACHES = [
+    { id:1, type:'coach',      name:'Marie Dubois',   city:'Genève',     credential:'PCC', langs:['FR','EN'], focus:['Leadership','Executive'],          available:true,  bio:'Helping senior leaders lead with clarity and humanity. 12 years in executive coaching.' },
+    { id:2, type:'coach',      name:'Hans Müller',    city:'Zürich',     credential:'MCC', langs:['DE','EN'], focus:['Team coaching','Systemic'],         available:true,  bio:'Systemic team coaching for organisations navigating complex change.' },
+    { id:3, type:'coach',      name:'Luca Rossi',     city:'Ticino',     credential:'ACC', langs:['IT','EN'], focus:['Career & transition'],              available:false, bio:'Supporting professionals through meaningful career moves in the Italian-speaking region.' },
+    { id:4, type:'coach',      name:'Anna Weber',     city:'Bern',       credential:'PCC', langs:['DE','FR','EN'], focus:['Life & wellbeing'],           available:true,  bio:'A warm, reflective space for growth and balance. Specialising in burnout recovery.' },
+    { id:5, type:'coach',      name:'Sophie Favre',   city:'Lausanne',   credential:'PCC', langs:['FR','EN'], focus:['Leadership','Career & transition'], available:true,  bio:'Career and leadership coaching for women in tech and finance.' },
+    { id:6, type:'coach',      name:'Daniel Keller',  city:'Basel',      credential:'MCC', langs:['DE','EN'], focus:['Executive','Systemic'],             available:true,  bio:'Executive coaching grounded in 20 years of practice in pharma and finance.' },
+    { id:7, type:'mentor',     name:'Claudia Brun',   city:'Zürich',     credential:'MCC', langs:['DE','FR','EN'], focus:['Mentor coaching','ACC prep'],  available:true,  bio:'Certified mentor coach with a decade of experience guiding coaches toward PCC and MCC.' },
+    { id:8, type:'mentor',     name:'Peter Schmid',   city:'Basel',      credential:'MCC', langs:['DE','EN'], focus:['Mentor coaching','PCC prep'],       available:true,  bio:'Helping coaches strengthen their core competencies through reflective mentoring sessions.' },
+    { id:9, type:'supervisor', name:'Isabelle Morel', city:'Genève',     credential:'MCC', langs:['FR','EN'], focus:['Supervision','Ethics'],             available:true,  bio:'Professional supervisor supporting coaches in reflective practice and ethical challenges.' },
+    { id:10,type:'supervisor', name:'Markus Hofer',   city:'Bern',       credential:'PCC', langs:['DE','EN'], focus:['Supervision','Systemic'],           available:false, bio:'Group and individual supervision for coaches working in organisational and systemic contexts.' },
+  ]
+
+  REGIONS = ['All cantons','Zürich','Genève','Basel','Bern','Ticino','Lausanne','Romandie','Other']
+  SPECIALTIES = ['Leadership','Executive','Team coaching','Career & transition','Life & wellbeing','Systemic','Mentor coaching','Supervision','Ethics']
+  LANGUAGES = ['DE','FR','IT','EN']
+  CREDENTIALS = ['ACC','PCC','MCC']
+
+  // ── Helpers ──────────────────────────────────────────────
+  _initials(name) {
+    return name.split(' ').filter(Boolean).slice(0,2).map(p => p[0].toUpperCase()).join('')
+  }
+
+  _filterBtnCls(active) {
+    return active ? 'filter-btn on' : 'filter-btn'
+  }
+
+  _filtered() {
+    const { tab, q, credentials, languages, region, specialties, availableOnly } = this.state
+    return this.ALL_COACHES.filter(c => {
+      if (c.type !== tab) return false
+      if (availableOnly && !c.available) return false
+      if (credentials.length && !credentials.includes(c.credential)) return false
+      if (languages.length && !languages.some(l => c.langs.includes(l))) return false
+      if (region && region !== 'All cantons' && c.city !== region) return false
+      if (specialties.length && !specialties.some(s => c.focus.includes(s))) return false
+      if (q) {
+        const hay = (c.name + ' ' + c.city + ' ' + c.focus.join(' ')).toLowerCase()
+        if (!hay.includes(q.toLowerCase())) return false
+      }
+      return true
+    })
+  }
+
+  // ── Render ───────────────────────────────────────────────
+  renderVals() {
+    const { tab, q, credentials, languages, region, specialties, availableOnly } = this.state
+    const filtered = this._filtered()
+    const isDirty = q || credentials.length || languages.length || (region && region !== 'All cantons') || specialties.length || availableOnly
+
+    const tabLabels = { coach:'coaches', mentor:'mentors', supervisor:'supervisors' }
+    const pageTitles = { coach:'Find a credentialed coach', mentor:'Find a mentor for coaches', supervisor:'Find a supervisor for coaches' }
+    const pageSubs   = { coach:'Every coach listed holds an active ICF credential and commits to the ICF Code of Ethics.', mentor:'ICF-credentialed mentor coaches to help you develop your coaching skills and prepare for your credential.', supervisor:'Experienced supervisors supporting coaches through reflective practice, ethics and professional growth.' }
+
+    return {
+      // ── Page copy
+      pageTitle: pageTitles[tab],
+      pageSubtitle: pageSubs[tab],
+
+      // ── Tabs
+      tab_coach_class:      `service-tab${tab==='coach'?' active':''}`,
+      tab_mentor_class:     `service-tab${tab==='mentor'?' active':''}`,
+      tab_supervisor_class: `service-tab${tab==='supervisor'?' active':''}`,
+      setTabCoach:      () => this.setState({ tab:'coach',      credentials:[], specialties:[] }),
+      setTabMentor:     () => this.setState({ tab:'mentor',     credentials:[], specialties:[] }),
+      setTabSupervisor: () => this.setState({ tab:'supervisor', credentials:[], specialties:[] }),
+
+      // ── Filters
+      q,
+      onQ: e => this.setState({ q: e.target.value }),
+      regionOptions: this.REGIONS,
+      region,
+      onRegion: e => this.setState({ region: e.target.value }),
+      availableOnly,
+      onAvailable: e => this.setState({ availableOnly: e.target.checked }),
+      isDirty,
+      clearFilters: () => this.setState({ q:'', credentials:[], languages:[], region:'All cantons', specialties:[], availableOnly:false }),
+
+      credentialOptions: this.CREDENTIALS.map(c => ({
+        label: c,
+        cls: this._filterBtnCls(credentials.includes(c)),
+        toggle: () => {
+          const next = credentials.includes(c) ? credentials.filter(x=>x!==c) : [...credentials,c]
+          this.setState({ credentials: next })
+        },
+      })),
+
+      langOptions: this.LANGUAGES.map(l => ({
+        label: l,
+        cls: this._filterBtnCls(languages.includes(l)),
+        toggle: () => {
+          const next = languages.includes(l) ? languages.filter(x=>x!==l) : [...languages,l]
+          this.setState({ languages: next })
+        },
+      })),
+
+      specialtyOptions: this.SPECIALTIES.map(s => ({
+        label: s,
+        cls: this._filterBtnCls(specialties.includes(s)),
+        toggle: () => {
+          const next = specialties.includes(s) ? specialties.filter(x=>x!==s) : [...specialties,s]
+          this.setState({ specialties: next })
+        },
+      })),
+
+      // ── Results
+      resultsLabel: `${filtered.length} ${tabLabels[tab]}${filtered.length !== 1 ? '' : ''.slice(0,-1)}`,
+      isEmpty: filtered.length === 0,
+
+      coaches: filtered.map(c => ({
+        initials: this._initials(c.name),
+        name: c.name,
+        city: c.city,
+        languages: c.langs.join(' · '),
+        credential: c.credential,
+        credClass: `cred cred-${c.credential}`,
+        bio: c.bio,
+        specialtyBadges: c.focus.map(f => ({ label: f })),
+        availLabel: c.available ? 'Accepting new clients' : 'Waitlist only',
+        availClass: `avail ${c.available ? 'avail-open' : 'avail-closed'}`,
+        dotClass:   c.available ? 'dot-open' : 'dot-closed',
+      })),
+    }
+  }
+}
+
+</script>
+</body>
+</html>
