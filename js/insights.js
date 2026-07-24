@@ -76,7 +76,13 @@ function renderToolbar() {
     ${catChips}`;
 
   document.getElementById('blogSearch').addEventListener('input', (e) => {
-    searchQuery = e.target.value.toLowerCase();
+    searchQuery = e.target.value.toLowerCase().trim();
+    if (searchQuery) {
+      activeFilter = 'all';
+      document.querySelectorAll('[data-cat]').forEach((c) => c.classList.remove('active'));
+      const allChip = document.querySelector('[data-cat="all"]');
+      if (allChip) allChip.classList.add('active');
+    }
     renderGrid();
   });
   document.querySelectorAll('[data-cat]').forEach((chip) => {
@@ -84,6 +90,9 @@ function renderToolbar() {
       document.querySelectorAll('[data-cat]').forEach((c) => c.classList.remove('active'));
       chip.classList.add('active');
       activeFilter = chip.getAttribute('data-cat');
+      searchQuery = '';
+      const searchInput = document.getElementById('blogSearch');
+      if (searchInput) searchInput.value = '';
       renderGrid();
     });
   });
@@ -95,14 +104,15 @@ function renderGrid() {
 
   let filtered = allArticles;
   if (activeFilter !== 'all') {
-    filtered = filtered.filter((a) => a.category_id === activeFilter);
+    filtered = filtered.filter((a) => String(a.category_id || '').trim() === String(activeFilter).trim());
   }
   if (searchQuery) {
-    filtered = filtered.filter((a) =>
-      a.title.toLowerCase().includes(searchQuery) ||
-      (a.excerpt || '').toLowerCase().includes(searchQuery) ||
-      (a.author || '').toLowerCase().includes(searchQuery),
-    );
+    filtered = filtered.filter((a) => {
+      const title = String(a.title || '').toLowerCase().trim();
+      const excerpt = String(a.excerpt || '').toLowerCase().trim();
+      const body = String(a.body || '').toLowerCase().trim();
+      return title.includes(searchQuery) || excerpt.includes(searchQuery) || body.includes(searchQuery);
+    });
   }
 
   if (filtered.length === 0) {

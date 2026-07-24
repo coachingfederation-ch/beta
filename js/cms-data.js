@@ -68,7 +68,7 @@ export async function fetchArticleTags(articleId) {
 export async function fetchPublishedArticles() {
   const { data, error } = await supabase
     .from('articles')
-    .select('id, title, slug, excerpt, title_de, title_fr, title_it, excerpt_de, excerpt_fr, excerpt_it, featured_image_url, featured_image_alt, author, published_at, category:categories(name, slug)')
+    .select('id, title, slug, excerpt, body, title_de, title_fr, title_it, excerpt_de, excerpt_fr, excerpt_it, featured_image_url, featured_image_alt, author, published_at, category_id, category:categories(name, slug)')
     .eq('status', 'published')
     .order('published_at', { ascending: false, nullsFirst: false });
   if (error) throw error;
