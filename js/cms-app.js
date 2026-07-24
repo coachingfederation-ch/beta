@@ -26,6 +26,7 @@ const app = document.getElementById('cms-app');
 // ── Auth gate ─────────────────────────────────────────────
 async function init() {
   onAuthChange((editor) => {
+    if (currentEditor && editor && currentEditor.id === editor.id) return;
     currentEditor = editor;
     render();
   });
@@ -64,6 +65,7 @@ function renderLogin() {
 
 // ── Shell ─────────────────────────────────────────────────
 function renderShell() {
+  renderToken++;
   app.innerHTML = `
     <div class="cms-shell">
       ${renderSidebar()}
@@ -143,14 +145,17 @@ function renderView() {
 
 // ── Articles list ─────────────────────────────────────────
 async function renderArticlesList(main) {
+  const myToken = renderToken;
   main.innerHTML = `<div style="padding:40px;text-align:center;color:var(--text-muted)">Loading articles…</div>`;
 
   try {
     articlesCache = await fetchArticles();
   } catch (err) {
+    if (myToken !== renderToken) return;
     main.innerHTML = `<div class="cms-empty"><h3>Could not load articles</h3><p>${escapeHtml(err.message)}</p></div>`;
     return;
   }
+  if (myToken !== renderToken) return;
 
   const counts = { published: 0, draft: 0, scheduled: 0 };
   for (const a of articlesCache) {
@@ -270,8 +275,10 @@ let editorState = { title: '', slug: '', excerpt: '', body: '', author: '', stat
 let saveTimer = null;
 let isDirty = false;
 let isTranslating = false;
+let renderToken = 0;
 
 async function renderEditor(main) {
+  const myToken = renderToken;
   if (!currentArticleId) {
     main.innerHTML = `
       <div class="cms-empty" style="padding:120px 20px">
@@ -292,6 +299,7 @@ async function renderEditor(main) {
       fetchTags(),
       fetchArticleTags(currentArticleId),
     ]);
+    if (myToken !== renderToken) return;
     categoriesCache = cats;
     tagsCache = allTags;
 
@@ -797,6 +805,7 @@ async function handleDelete() {
 
 // ── Taxonomy ──────────────────────────────────────────────
 async function renderTaxonomy(main) {
+  const myToken = renderToken;
   main.innerHTML = `<div style="padding:40px;text-align:center;color:var(--text-muted)">Loading…</div>`;
   try {
     const [cats, allTags, catCounts, tagCounts] = await Promise.all([
@@ -805,6 +814,7 @@ async function renderTaxonomy(main) {
       getCategoryCounts(),
       getTagCounts(),
     ]);
+    if (myToken !== renderToken) return;
     categoriesCache = cats;
     tagsCache = allTags;
 
@@ -920,10 +930,12 @@ async function handleAddTagTax() {
 
 // ── Site Translations view ───────────────────────────────
 async function renderSiteTranslations(main) {
+  const myToken = renderToken;
   main.innerHTML = `<div style="padding:40px;text-align:center;color:var(--text-muted)">Loading…</div>`;
 
   try {
     const status = await getSiteTranslationStatus();
+    if (myToken !== renderToken) return;
 
     main.innerHTML = `
       <div class="cms-page-header">
@@ -1000,6 +1012,7 @@ async function getSiteTranslationStatus() {
 }
 
 async function handleRunSiteTranslations() {
+  const myToken = renderToken;
   const btn = document.getElementById('siteTransRunBtn');
   const resultEl = document.getElementById('siteTransResult');
   if (!btn || !resultEl) return;
@@ -1030,11 +1043,13 @@ async function handleRunSiteTranslations() {
       totalTranslated += translated.length;
     }
 
+    if (myToken !== renderToken) return;
     resultEl.innerHTML = `<div class="cms-site-trans-success">✓ Translated ${totalTranslated} strings across all languages. Language switching is now instant on every page.</div>`;
     btn.textContent = 'Re-run pre-translation';
     btn.disabled = false;
 
     const status = await getSiteTranslationStatus();
+    if (myToken !== renderToken) return;
     document.querySelector('.cms-site-trans-card:nth-child(2)').innerHTML =
       '<div class="cms-site-trans-card-header"><h2>Translation status</h2></div>' + renderSiteTransStatusRows(status);
   } catch (err) {
