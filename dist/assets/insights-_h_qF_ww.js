@@ -1,4 +1,4 @@
-import{S as s,g as L,a as w}from"./i18n-DTIVa0Cg.js";import{t as x,d as $}from"./cms-data-DhRMR_wT.js";import{m as C}from"./layout-Q_CGp6KH.js";let h=[],m=[],d="all",l="",c=s;async function E(){C("Insights");const t=document.getElementById("blog-content");try{const[a,e]=await Promise.all([x(),$()]);m=e,c=L(),h=a,u(t),await o()}catch{t.innerHTML=`
+import{S as s,g as L,a as w}from"./i18n-CLQBegKv.js";import{t as x,d as $}from"./cms-data-TbRm3rQQ.js";import{m as C}from"./layout-D8U7-DMP.js";let h=[],m=[],d="all",l="",c=s;async function E(){C("Insights");const t=document.getElementById("blog-content");try{const[a,e]=await Promise.all([x(),$()]);m=e,c=L(),h=a,u(t),await o()}catch{t.innerHTML=`
       <div class="blog-empty">
         <h3 data-i18n>Could not load articles</h3>
         <p data-i18n>Please try again later.</p>
