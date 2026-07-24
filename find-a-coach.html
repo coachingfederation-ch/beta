@@ -16,13 +16,13 @@
   <!-- ── PAGE HEADER ─────────────────────────────────────── -->
   <div class="page-header">
     <div class="page-header-inner">
-      <p class="icf-overline" style="margin-bottom:12px">ICF Switzerland Directory</p>
+      <p class="icf-overline" style="margin-bottom:12px" data-i18n>ICF Switzerland Directory</p>
       <h1 id="pageTitle">Find a credentialed coach</h1>
       <p id="pageSubtitle">Every coach listed holds an active ICF credential and commits to the ICF Code of Ethics.</p>
       <div class="service-tabs">
-        <button class="service-tab active" data-tab="coach">Find a coach</button>
-        <button class="service-tab" data-tab="mentor">Find a mentor</button>
-        <button class="service-tab" data-tab="supervisor">Find a supervisor</button>
+        <button class="service-tab active" data-tab="coach" data-i18n>Find a coach</button>
+        <button class="service-tab" data-tab="mentor" data-i18n>Find a mentor</button>
+        <button class="service-tab" data-tab="supervisor" data-i18n>Find a supervisor</button>
       </div>
     </div>
   </div>
@@ -32,33 +32,33 @@
     <!-- FILTER SIDEBAR -->
     <aside class="filters">
       <div class="filter-group">
-        <label class="input-label" for="searchInput">Search</label>
-        <input type="text" id="searchInput" class="icf-input" placeholder="Name, city, specialty…">
+        <label class="input-label" for="searchInput" data-i18n>Search</label>
+        <input type="text" id="searchInput" class="icf-input" placeholder="Name, city, specialty…" data-i18n-attr="placeholder">
       </div>
       <div class="sep"></div>
       <div class="filter-group">
-        <p class="filter-label">Credential</p>
+        <p class="filter-label" data-i18n>Credential</p>
         <div class="filter-tags" id="credentialFilters"></div>
       </div>
       <div class="sep"></div>
       <div class="filter-group">
-        <p class="filter-label">Language</p>
+        <p class="filter-label" data-i18n>Language</p>
         <div class="filter-tags" id="langFilters"></div>
       </div>
       <div class="sep"></div>
       <div class="filter-group">
-        <label class="input-label" for="regionSelect">Canton / Region</label>
+        <label class="input-label" for="regionSelect" data-i18n>Canton / Region</label>
         <select id="regionSelect" class="icf-select"></select>
       </div>
       <div class="sep"></div>
       <div class="filter-group">
-        <p class="filter-label">Specialty</p>
+        <p class="filter-label" data-i18n>Specialty</p>
         <div class="filter-tags" id="specialtyFilters"></div>
       </div>
       <div class="sep"></div>
       <div class="filter-group">
         <label class="icf-checkbox">
-          <input type="checkbox" id="availableOnly"> Accepting new clients
+          <input type="checkbox" id="availableOnly"> <span data-i18n>Accepting new clients</span>
         </label>
       </div>
       <div id="clearContainer"></div>
@@ -72,7 +72,7 @@
       <div class="coach-grid" id="coachGrid">
         <div class="loading-state">
           <div class="spinner"></div>
-          <p>Loading coaches…</p>
+          <p data-i18n>Loading coaches…</p>
         </div>
       </div>
     </div>
@@ -83,6 +83,7 @@
   <script type="module">
     import { mountLayout } from './js/layout.js';
     import { fetchCoaches, initials, credClass, REGIONS, SPECIALTIES, LANGUAGES, CREDENTIALS } from './js/supabase-client.js';
+    import { getCurrentLang, translateStrings, SOURCE_LANG } from './js/i18n.js';
 
     mountLayout('Find a Coach');
 
@@ -106,9 +107,89 @@
       mentor: 'ICF-credentialed mentor coaches to help you develop your coaching skills and prepare for your credential.',
       supervisor: 'Experienced supervisors supporting coaches through reflective practice, ethics and professional growth.',
     };
+    // Cache of currently-translated strings so re-renders don't re-fetch.
+    let i18nCache = {
+      lang: SOURCE_LANG,
+      regionLabels: {},      // original -> translated
+      specialtyLabels: {},   // original -> translated
+      tabTitles: {},         // tab -> translated title
+      tabSubs: {},           // tab -> translated subtitle
+      statusMessages: {},    // key -> translated
+      bios: {},              // coachId -> translated bio
+    };
 
-    function filterBtnCls(active) {
-      return active ? 'filter-btn on' : 'filter-btn';
+    function currentLang() {
+      return getCurrentLang();
+    }
+
+    // ── Dynamic i18n helpers ───────────────────────────────
+    // These fixed UI strings are translated once per language and cached.
+    const UI_STRINGS = [
+      ...Object.values(TAB_TITLES),
+      ...Object.values(TAB_SUBS),
+      'coaches', 'mentors', 'supervisors',
+      'Loading…',
+      'Could not load coaches',
+      'No coaches match your filters',
+      'Try widening your region, credential or specialty.',
+      'Loading coaches…',
+      'Accepting new clients',
+      'Waitlist only',
+      'View profile',
+      'Clear all filters',
+      'All cantons',
+      ...REGIONS,
+      ...SPECIALTIES,
+    ];
+    const UI_INDEX = {};
+    UI_STRINGS.forEach((s, i) => { if (!(s in UI_INDEX)) UI_INDEX[s] = i; });
+    let uiTranslations = {}; // original -> translated
+
+    async function ensureUiTranslated(lang) {
+      if (i18nCache.lang === lang) return;
+      if (lang === SOURCE_LANG) {
+        uiTranslations = {};
+        i18nCache.lang = lang;
+        return;
+      }
+      const translated = await translateStrings(UI_STRINGS, SOURCE_LANG, lang);
+      uiTranslations = {};
+      UI_STRINGS.forEach((s, i) => { uiTranslations[s] = translated[i]; });
+      i18nCache.lang = lang;
+      i18nCache.bios = {}; // reset bio cache on lang change
+    }
+
+    function t(original) {
+      if (i18nCache.lang === SOURCE_LANG) return original;
+      return uiTranslations[original] || original;
+    }
+
+    async function ensureBiosTranslated(coaches, lang) {
+      if (lang === SOURCE_LANG) return;
+      const need = coaches.filter(c => !i18nCache.bios[c.id]);
+      if (need.length === 0) return;
+      // Group by source language so we translate from the right source.
+      const bySource = {};
+      need.forEach(c => {
+        const sl = c.source_language || SOURCE_LANG;
+        if (sl === lang) {
+          // Bio already in target language — no translation needed.
+          i18nCache.bios[c.id] = c.bio;
+        } else {
+          if (!bySource[sl]) bySource[sl] = [];
+          bySource[sl].push(c);
+        }
+      });
+      for (const [sl, group] of Object.entries(bySource)) {
+        const translated = await translateStrings(group.map(c => c.bio), sl, lang);
+        group.forEach((c, i) => { i18nCache.bios[c.id] = translated[i]; });
+      }
+    }
+
+    function getBio(c) {
+      const lang = i18nCache.lang;
+      if (lang === SOURCE_LANG) return c.bio;
+      return i18nCache.bios[c.id] || c.bio;
     }
 
     function isDirty() {
@@ -147,16 +228,16 @@
       const specContainer = document.getElementById('specialtyFilters');
       specContainer.innerHTML = SPECIALTIES.map(s => {
         const active = state.specialties.includes(s);
-        return `<button class="${filterBtnCls(active)}" data-spec="${s}">${s}</button>`;
+        return `<button class="${filterBtnCls(active)}" data-spec="${s}">${t(s)}</button>`;
       }).join('');
 
       const regionSelect = document.getElementById('regionSelect');
       regionSelect.innerHTML = REGIONS.map(r =>
-        `<option value="${r}"${r === state.region ? ' selected' : ''}>${r}</option>`
+        `<option value="${r}"${r === state.region ? ' selected' : ''}>${t(r)}</option>`
       ).join('');
 
       const clearContainer = document.getElementById('clearContainer');
-      clearContainer.innerHTML = isDirty() ? `<button class="filter-clear" id="clearBtn">&times; Clear all filters</button>` : '';
+      clearContainer.innerHTML = isDirty() ? `<button class="filter-clear" id="clearBtn">&times; ${t('Clear all filters')}</button>` : '';
 
       attachFilterListeners();
     }
@@ -228,13 +309,12 @@
         count.textContent = '';
         return;
       }
-
       const filtered = getFiltered();
-      const label = TAB_LABELS[state.tab];
-      count.textContent = `${filtered.length} ${label}${filtered.length !== 1 ? '' : ''}`;
+      const label = t(TAB_LABELS[state.tab]);
+      count.textContent = `${filtered.length} ${label}`;
 
       if (filtered.length === 0) {
-        grid.innerHTML = '<div class="empty"><h3>No coaches match your filters</h3><p>Try widening your region, credential or specialty.</p></div>';
+        grid.innerHTML = `<div class="empty"><h3>${t('No coaches match your filters')}</h3><p>${t('Try widening your region, credential or specialty.')}</p></div>`;
         return;
       }
 
@@ -253,16 +333,16 @@
             </div>
             <span class="${credClass(c.credential)}">${c.credential}</span>
           </div>
-          <p style="font-size:14px;color:var(--text-body);line-height:1.55;margin:0">${c.bio}</p>
+          <p style="font-size:14px;color:var(--text-body);line-height:1.55;margin:0">${getBio(c)}</p>
           <div style="display:flex;flex-wrap:wrap;gap:6px">
-            ${c.specialties.map(s => `<span class="sp-tag">${s}</span>`).join('')}
+            ${c.specialties.map(s => `<span class="sp-tag">${t(s)}</span>`).join('')}
           </div>
           <div style="display:flex;align-items:center;justify-content:space-between;padding-top:10px;border-top:1px solid var(--border-subtle)">
             <div class="avail ${c.available ? 'avail-open' : 'avail-closed'}">
               <span class="avail-dot ${c.available ? 'dot-open' : 'dot-closed'}"></span>
-              ${c.available ? 'Accepting new clients' : 'Waitlist only'}
+              ${c.available ? t('Accepting new clients') : t('Waitlist only')}
             </div>
-            <a href="#" class="btn btn-ghost">View profile</a>
+            <a href="#" class="btn btn-ghost">${t('View profile')}</a>
           </div>
         </div>
       `).join('');
@@ -274,6 +354,7 @@
       renderResults();
       try {
         state.coaches = await fetchCoaches(state.tab);
+        await ensureBiosTranslated(state.coaches, currentLang());
       } catch (err) {
         state.error = 'Please try again later.';
         state.coaches = [];
@@ -289,8 +370,8 @@
       document.querySelectorAll('.service-tab').forEach(t => {
         t.classList.toggle('active', t.dataset.tab === tab);
       });
-      document.getElementById('pageTitle').textContent = TAB_TITLES[tab];
-      document.getElementById('pageSubtitle').textContent = TAB_SUBS[tab];
+      document.getElementById('pageTitle').textContent = t(TAB_TITLES[tab]);
+      document.getElementById('pageSubtitle').textContent = t(TAB_SUBS[tab]);
       renderFilters();
       loadCoaches();
     }
@@ -320,6 +401,28 @@
 
     renderFilters();
     loadCoaches();
+
+    // ── React to language changes from the global switcher ──
+    document.addEventListener('icf:langchange', async (e) => {
+      const lang = e.detail.lang;
+      await ensureUiTranslated(lang);
+      document.getElementById('pageTitle').textContent = t(TAB_TITLES[state.tab]);
+      document.getElementById('pageSubtitle').textContent = t(TAB_SUBS[state.tab]);
+      await ensureBiosTranslated(state.coaches, lang);
+      renderFilters();
+      renderResults();
+    });
+
+    // Initial translation if page loads in non-English
+    (async () => {
+      const lang = currentLang();
+      if (lang !== SOURCE_LANG) {
+        await ensureUiTranslated(lang);
+        document.getElementById('pageTitle').textContent = t(TAB_TITLES[state.tab]);
+        document.getElementById('pageSubtitle').textContent = t(TAB_SUBS[state.tab]);
+        renderFilters();
+      }
+    })();
   </script>
 </body>
 </html>

@@ -874,3 +874,28 @@ img { max-width: 100%; display: block; }
   .header-actions .lang-switcher,
   .header-actions .member-login { display: none; }
 }
+
+/* ── Translation loading indicator ───────────────────────── */
+#i18n-indicator {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 200;
+  padding: 10px 18px;
+  border-radius: var(--radius-pill);
+  background: var(--icf-indigo-900);
+  color: #fff;
+  font-size: 13px;
+  font-weight: var(--fw-semibold);
+  letter-spacing: 0.01em;
+  box-shadow: var(--shadow-lg);
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity var(--dur-base) var(--ease-standard),
+              transform var(--dur-base) var(--ease-standard);
+  pointer-events: none;
+}
+#i18n-indicator.visible {
+  opacity: 1;
+  transform: translateY(0);
+}

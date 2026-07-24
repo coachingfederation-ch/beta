@@ -1,3 +1,5 @@
+import { LANG_LABELS, LANGS, initI18n } from './i18n.js';
+
 const NAV_ITEMS = [
   { label: 'Find a Coach', href: 'find-a-coach.html' },
   { label: 'For Organisations', href: 'for-organisations.html' },
@@ -9,7 +11,11 @@ const NAV_ITEMS = [
 
 export function renderHeader(activePage) {
   const navLinks = NAV_ITEMS.map(item =>
-    `<a href="${item.href}" class="nav-link${item.label === activePage ? ' active' : ''}">${item.label}</a>`
+    `<a href="${item.href}" class="nav-link${item.label === activePage ? ' active' : ''}" data-i18n>${item.label}</a>`
+  ).join('');
+
+  const langLinks = LANGS.map(code =>
+    `<a href="#" data-lang-switch="${code}" class="${code === 'en' ? 'active' : ''}">${LANG_LABELS[code]}</a>`
   ).join('');
 
   return `
@@ -23,17 +29,14 @@ export function renderHeader(activePage) {
       </nav>
       <div class="header-actions">
         <span class="lang-switcher">
-          <a href="#" class="active">EN</a>
-          <a href="#">DE</a>
-          <a href="#">FR</a>
-          <a href="#">IT</a>
+          ${langLinks}
         </span>
-        <a href="#" class="icon-btn" aria-label="Search">
+        <a href="#" class="icon-btn" aria-label="Search" data-i18n-attr="aria-label">
           <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
         </a>
-        <a href="#" class="member-login">Member Login</a>
-        <a href="about.html" class="btn btn-primary btn-sm">Join</a>
-        <button class="mobile-nav-toggle" id="mobileNavToggle" aria-label="Toggle menu">
+        <a href="#" class="member-login" data-i18n>Member Login</a>
+        <a href="about.html" class="btn btn-primary btn-sm" data-i18n>Join</a>
+        <button class="mobile-nav-toggle" id="mobileNavToggle" aria-label="Toggle menu" data-i18n-attr="aria-label">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
         </button>
       </div>
@@ -47,7 +50,7 @@ export function renderFooter() {
     <div class="footer-grid">
       <div>
         <img src="assets/logos/icf-switzerland-vertical-white.png" alt="ICF Switzerland" style="height:90px;margin-bottom:18px">
-        <p style="font-size:14px;line-height:1.7;max-width:280px;margin:0 0 20px;color:var(--icf-indigo-200)">Building a more human future through professional coaching.</p>
+        <p style="font-size:14px;line-height:1.7;max-width:280px;margin:0 0 20px;color:var(--icf-indigo-200)" data-i18n>Building a more human future through professional coaching.</p>
         <div style="display:flex;gap:10px">
           <a href="#" class="social-link" aria-label="LinkedIn">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M4.98 3.5C4.98 4.88 3.87 6 2.5 6S0 4.88 0 3.5 1.12 1 2.5 1s2.48 1.12 2.48 2.5ZM.2 8h4.6v14.5H.2V8Zm7.4 0h4.4v2h.06c.6-1.15 2.1-2.36 4.34-2.36 4.64 0 5.5 3.06 5.5 7.04v7.82h-4.6v-6.94c0-1.66-.03-3.8-2.3-3.8-2.3 0-2.66 1.8-2.66 3.67v7.07H7.6V8Z"></path></svg>
@@ -61,55 +64,55 @@ export function renderFooter() {
         </div>
       </div>
       <div>
-        <h4>Find a Coach</h4>
+        <h4 data-i18n>Find a Coach</h4>
         <ul>
-          <li><a href="find-a-coach.html">Coach Directory</a></li>
-          <li><a href="#">Why an ICF Coach?</a></li>
-          <li><a href="#">What is Coaching?</a></li>
-          <li><a href="#">FAQs</a></li>
+          <li><a href="find-a-coach.html" data-i18n>Coach Directory</a></li>
+          <li><a href="#" data-i18n>Why an ICF Coach?</a></li>
+          <li><a href="#" data-i18n>What is Coaching?</a></li>
+          <li><a href="#" data-i18n>FAQs</a></li>
         </ul>
       </div>
       <div>
-        <h4>Organisations</h4>
+        <h4 data-i18n>Organisations</h4>
         <ul>
-          <li><a href="for-organisations.html">Why Coaching?</a></li>
-          <li><a href="#">Executive Coaching</a></li>
-          <li><a href="#">Team Coaching</a></li>
-          <li><a href="#">Case Studies</a></li>
+          <li><a href="for-organisations.html" data-i18n>Why Coaching?</a></li>
+          <li><a href="#" data-i18n>Executive Coaching</a></li>
+          <li><a href="#" data-i18n>Team Coaching</a></li>
+          <li><a href="#" data-i18n>Case Studies</a></li>
         </ul>
       </div>
       <div>
-        <h4>For Coaches</h4>
+        <h4 data-i18n>For Coaches</h4>
         <ul>
-          <li><a href="for-coaches.html">Membership</a></li>
-          <li><a href="#">Credentials</a></li>
-          <li><a href="#">Communities</a></li>
-          <li><a href="#">Mentoring &amp; Supervision</a></li>
+          <li><a href="for-coaches.html" data-i18n>Membership</a></li>
+          <li><a href="#" data-i18n>Credentials</a></li>
+          <li><a href="#" data-i18n>Communities</a></li>
+          <li><a href="#" data-i18n>Mentoring &amp; Supervision</a></li>
         </ul>
       </div>
       <div>
-        <h4>About</h4>
+        <h4 data-i18n>About</h4>
         <ul>
-          <li><a href="about.html">Our Vision</a></li>
-          <li><a href="#">Board</a></li>
-          <li><a href="#">Partnerships</a></li>
-          <li><a href="#">Contact</a></li>
+          <li><a href="about.html" data-i18n>Our Vision</a></li>
+          <li><a href="#" data-i18n>Board</a></li>
+          <li><a href="#" data-i18n>Partnerships</a></li>
+          <li><a href="#" data-i18n>Contact</a></li>
         </ul>
       </div>
     </div>
     <div class="footer-bottom">
       <div class="footer-bottom-inner">
-        <span>&copy; 2026 ICF Switzerland Charter Chapter</span>
+        <span data-i18n>&copy; 2026 ICF Switzerland Charter Chapter</span>
         <span style="display:flex;gap:14px;align-items:center">
-          <a href="#">Deutsch</a>
-          <a href="#">Français</a>
-          <a href="#">Italiano</a>
-          <a href="#" style="color:#fff">English</a>
+          <a href="#" data-lang-footer="de">Deutsch</a>
+          <a href="#" data-lang-footer="fr">Français</a>
+          <a href="#" data-lang-footer="it">Italiano</a>
+          <a href="#" data-lang-footer="en" style="color:#fff">English</a>
         </span>
         <span style="display:flex;gap:22px">
-          <a href="#">Privacy</a>
-          <a href="#">Code of Ethics</a>
-          <a href="#">Imprint</a>
+          <a href="#" data-i18n>Privacy</a>
+          <a href="#" data-i18n>Code of Ethics</a>
+          <a href="#" data-i18n>Imprint</a>
         </span>
       </div>
     </div>
@@ -132,4 +135,5 @@ export function mountLayout(activePage) {
   if (headerSlot) headerSlot.innerHTML = renderHeader(activePage);
   if (footerSlot) footerSlot.innerHTML = renderFooter();
   initNav();
+  initI18n();
 }
