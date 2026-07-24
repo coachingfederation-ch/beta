@@ -68,7 +68,7 @@ export async function fetchArticleTags(articleId) {
 export async function fetchPublishedArticles() {
   const { data, error } = await supabase
     .from('articles')
-    .select('id, title, slug, excerpt, featured_image_url, featured_image_alt, author, published_at, category:categories(name, slug)')
+    .select('id, title, slug, excerpt, title_de, title_fr, title_it, excerpt_de, excerpt_fr, excerpt_it, featured_image_url, featured_image_alt, author, published_at, category:categories(name, slug)')
     .eq('status', 'published')
     .order('published_at', { ascending: false, nullsFirst: false });
   if (error) throw error;
@@ -142,6 +142,28 @@ export async function deleteArticle(id) {
     .delete()
     .eq('id', id);
   if (error) throw error;
+}
+
+export async function saveArticleTranslations(id, translations, hash) {
+  const updates = { ...translations, translation_hash: hash, updated_at: new Date().toISOString() };
+  const { data, error } = await supabase
+    .from('articles')
+    .update(updates)
+    .eq('id', id)
+    .select('title_de, title_fr, title_it, excerpt_de, excerpt_fr, excerpt_it, body_de, body_fr, body_it, translation_hash')
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export function localizeArticle(article, lang) {
+  if (!article || lang === 'en') return article;
+  return {
+    ...article,
+    title: article[`title_${lang}`] || article.title,
+    excerpt: article[`excerpt_${lang}`] || article.excerpt,
+    body: article[`body_${lang}`] || article.body,
+  };
 }
 
 export async function setArticleTags(articleId, tagIds) {

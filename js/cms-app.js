@@ -4,8 +4,12 @@ import {
   fetchCategories, fetchTags, fetchArticleTags, setArticleTags,
   createCategory, deleteCategory, createTag, deleteTag,
   getCategoryCounts, getTagCounts, uploadArticleImage, slugify,
+  saveArticleTranslations,
 } from './cms-data.js';
 import { LANGS, SOURCE_LANG, translateStrings } from './i18n.js';
+
+const TARGET_LANGS = ['de', 'fr', 'it'];
+const LANG_NATIVE = { de: 'Deutsch', fr: 'Français', it: 'Italiano' };
 
 const ALLOWED_DOMAIN = 'coachingfederation.ch';
 let currentEditor = null;
@@ -258,9 +262,10 @@ async function handleNewArticle() {
 }
 
 // ── Editor ────────────────────────────────────────────────
-let editorState = { title: '', slug: '', excerpt: '', body: '', author: '', status: 'draft', category_id: null, featured_image_url: null, featured_image_alt: '' };
+let editorState = { title: '', slug: '', excerpt: '', body: '', author: '', status: 'draft', category_id: null, featured_image_url: null, featured_image_alt: '', translations: {} };
 let saveTimer = null;
 let isDirty = false;
+let isTranslating = false;
 
 async function renderEditor(main) {
   if (!currentArticleId) {
@@ -303,6 +308,11 @@ async function renderEditor(main) {
       featured_image_url: article.featured_image_url || null,
       featured_image_alt: article.featured_image_alt || '',
       tagIds: articleTags.map(t => t.id),
+      translations: {
+        de: { title: article.title_de || null, excerpt: article.excerpt_de || null, body: article.body_de || null },
+        fr: { title: article.title_fr || null, excerpt: article.excerpt_fr || null, body: article.body_fr || null },
+        it: { title: article.title_it || null, excerpt: article.excerpt_it || null, body: article.body_it || null },
+      },
     };
 
     renderEditorContent(main);
@@ -338,10 +348,10 @@ function renderEditorContent(main) {
         <div class="cms-canvas-inner">
           <div class="cms-lang-tabs">
             <span class="cms-lang-tab cms-lang-tab-source">EN · Source</span>
-            <span class="cms-lang-tab cms-lang-tab-done">DE <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg></span>
-            <span class="cms-lang-tab cms-lang-tab-done">FR <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg></span>
-            <span class="cms-lang-tab cms-lang-tab-done">IT <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg></span>
-            <span class="cms-lang-tabs-hint">Write once — AI translates the rest</span>
+            ${renderLangTab('de')}
+            ${renderLangTab('fr')}
+            ${renderLangTab('it')}
+            <span class="cms-lang-tabs-hint">Click “Translate now” in the panel to generate translations</span>
           </div>
           <input type="text" class="cms-title-input" id="titleInput" value="${escapeAttr(editorState.title)}" placeholder="Article title">
           <textarea class="cms-excerpt-input" id="excerptInput" rows="2" placeholder="Lead paragraph — a short summary that appears under the headline and in article cards.">${escapeHtml(editorState.excerpt)}</textarea>
@@ -393,19 +403,11 @@ function renderSettingsPanel() {
     <aside class="cms-settings-panel">
       <section class="cms-panel-section">
         <h3>Translations</h3>
-        <div class="cms-tag-row">
-          <span>Deutsch</span>
-          <span class="cms-tag-status"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg>Auto-translated</span>
-        </div>
-        <div class="cms-tag-row">
-          <span>Français</span>
-          <span class="cms-tag-status"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg>Auto-translated</span>
-        </div>
-        <div class="cms-tag-row">
-          <span>Italiano</span>
-          <span class="cms-tag-status"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg>Auto-translated</span>
-        </div>
-        <p style="font-size:12px;color:var(--text-muted);line-height:1.55;margin:10px 2px 0">Translations update automatically when the article is published. Visitors see the translated version based on their language choice.</p>
+        <button class="cms-translate-btn" id="translateNowBtn">${isTranslating ? 'Translating…' : 'Translate now'}</button>
+        ${renderTranslationRow('de')}
+        ${renderTranslationRow('fr')}
+        ${renderTranslationRow('it')}
+        <p style="font-size:12px;color:var(--text-muted);line-height:1.55;margin:10px 2px 0">Click “Translate now” to generate all three translations at once. Visitors see the stored version for their language — no live translation needed on page load.</p>
       </section>
       <section class="cms-panel-section">
         <h3>Publishing</h3>
@@ -566,6 +568,13 @@ function bindEditorEvents() {
   // Publish / Delete
   document.getElementById('publishBtn').addEventListener('click', handlePublish);
   document.getElementById('deleteBtn').addEventListener('click', handleDelete);
+
+  const translateBtn = document.getElementById('translateNowBtn');
+  if (translateBtn) translateBtn.addEventListener('click', handleTranslateNow);
+  TARGET_LANGS.forEach(lang => {
+    const reBtn = document.getElementById(`retranslate-${lang}`);
+    if (reBtn) reBtn.addEventListener('click', () => handleTranslateNow(lang));
+  });
 }
 
 async function handleImageUpload(file) {
@@ -783,6 +792,103 @@ async function handleAddTagTax() {
   } catch (err) {
     alert('Could not add tag: ' + err.message);
   }
+}
+
+// ── Translation helpers ──────────────────────────────────
+function renderLangTab(lang) {
+  const tr = editorState.translations[lang] || {};
+  const hasTitle = tr.title != null;
+  const hasBody = tr.body != null;
+  const isDone = hasTitle && hasBody;
+  return `<span class="cms-lang-tab ${isDone ? 'cms-lang-tab-done' : 'cms-lang-tab-pending'}">${lang.toUpperCase()} ${isDone
+    ? '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg>'
+    : '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v6"></path><circle cx="12\" cy=\"16.5\" r=\"0.5\" fill=\"currentColor\"></circle></svg>'}</span>`;
+}
+
+function renderTranslationRow(lang) {
+  const tr = editorState.translations[lang] || {};
+  const isDone = tr.title != null && tr.body != null;
+  const statusText = isDone ? 'Translated' : 'Pending';
+  const statusClass = isDone ? 'cms-tag-status-done' : 'cms-tag-status-pending';
+  return `<div class="cms-tag-row">
+    <span>${LANG_NATIVE[lang]}</span>
+    <span class="cms-tag-status ${statusClass}">${statusText}</span>
+    <button class="cms-retranslate-btn" id="retranslate-${lang}" style="margin-left:auto;padding:2px 10px;font-size:11px;border-radius:999px;border:1px solid var(--border-default);background:transparent;color:var(--text-muted);cursor:pointer">${isDone ? 'Re-translate' : 'Translate'}</button>
+  </div>`;
+}
+
+async function handleTranslateNow(targetLang) {
+  if (isTranslating || !editorState.id) return;
+  const single = typeof targetLang === 'string';
+  const langsToTranslate = single ? [targetLang] : TARGET_LANGS;
+
+  if (!editorState.title || editorState.title.trim() === 'Untitled article') {
+    alert('Please add a title before translating.');
+    return;
+  }
+
+  isTranslating = true;
+  setTranslateBtnState(true);
+  setRetranslateButtonsDisabled(true);
+
+  const sourceTexts = [
+    editorState.title || '',
+    editorState.excerpt || '',
+    editorState.body || '',
+  ];
+
+  try {
+    for (const lang of langsToTranslate) {
+      const [tTitle, tExcerpt, tBody] = await translateStrings(sourceTexts, SOURCE_LANG, lang);
+      editorState.translations[lang] = { title: tTitle, excerpt: tExcerpt, body: tBody };
+    }
+
+    const dbUpdates = {};
+    let changedHash = '';
+    const sourceHash = `${editorState.title}|${editorState.excerpt}|${editorState.body}`;
+    for (const lang of TARGET_LANGS) {
+      const tr = editorState.translations[lang];
+      if (tr && tr.title != null) {
+        dbUpdates[`title_${lang}`] = tr.title;
+        dbUpdates[`excerpt_${lang}`] = tr.excerpt;
+        dbUpdates[`body_${lang}`] = tr.body;
+        changedHash = sourceHash;
+      }
+    }
+
+    await saveArticleTranslations(editorState.id, dbUpdates, changedHash);
+    renderEditorContent(document.getElementById('cmsMain'));
+    showPanelToast('Translations saved.');
+  } catch (err) {
+    alert('Translation failed: ' + (err.message || err));
+  } finally {
+    isTranslating = false;
+    setTranslateBtnState(false);
+    setRetranslateButtonsDisabled(false);
+  }
+}
+
+function setTranslateBtnState(translating) {
+  const btn = document.getElementById('translateNowBtn');
+  if (!btn) return;
+  btn.textContent = translating ? 'Translating…' : 'Translate now';
+  btn.disabled = translating;
+  btn.classList.toggle('cms-translate-btn-busy', translating);
+}
+
+function setRetranslateButtonsDisabled(disabled) {
+  document.querySelectorAll('.cms-retranslate-btn').forEach(b => { b.disabled = disabled; });
+}
+
+function showPanelToast(msg) {
+  const existing = document.querySelector('.cms-panel-toast');
+  if (existing) existing.remove();
+  const toast = document.createElement('div');
+  toast.className = 'cms-panel-toast';
+  toast.textContent = msg;
+  document.body.appendChild(toast);
+  requestAnimationFrame(() => toast.classList.add('visible'));
+  setTimeout(() => { toast.classList.remove('visible'); setTimeout(() => toast.remove(), 300); }, 2400);
 }
 
 // ── Helpers ───────────────────────────────────────────────

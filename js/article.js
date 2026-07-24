@@ -2,9 +2,10 @@ import {
   fetchPublishedArticleBySlug,
   fetchRelatedArticles,
   fetchArticleTags,
+  localizeArticle,
 } from './cms-data.js';
 import { mountLayout } from './layout.js';
-import { getCurrentLang, SOURCE_LANG, applyTranslations, translateStrings } from './i18n.js';
+import { getCurrentLang, SOURCE_LANG, applyTranslations } from './i18n.js';
 
 let currentArticle = null;
 
@@ -26,13 +27,15 @@ async function init() {
       return;
     }
     currentArticle = article;
-    await renderArticle(article);
+    const lang = getCurrentLang();
+    const localized = localizeArticle(article, lang);
+    await renderArticle(localized, lang);
   } catch (err) {
     renderError(err);
   }
 }
 
-async function renderArticle(article) {
+async function renderArticle(article, lang) {
   document.title = `${article.title} — ICF Switzerland Insights`;
 
   const descEl = document.querySelector('meta[name="description"]');
@@ -40,8 +43,8 @@ async function renderArticle(article) {
 
   const tags = await fetchArticleTags(article.id);
   const related = await fetchRelatedArticles(article.id, article.category_id, 3);
+  const relatedLocalized = related.map(a => localizeArticle(a, lang));
 
-  const lang = getCurrentLang();
   const isTranslated = lang !== SOURCE_LANG;
 
   const heroImg = article.featured_image_url
@@ -78,44 +81,11 @@ async function renderArticle(article) {
         <a href="insights.html" class="btn btn-secondary btn-md" data-i18n>&larr; Back to Insights</a>
       </div>
     </article>
-    ${related.length > 0 ? renderRelated(related) : ''}`;
-
-  if (isTranslated) {
-    await translateArticleContent(lang);
-  }
+    ${relatedLocalized.length > 0 ? renderRelated(relatedLocalized) : ''}`;
 
   // Re-apply UI translations for surrounding elements
   if (isTranslated) {
     applyTranslations(lang, main);
-  }
-}
-
-async function translateArticleContent(lang) {
-  const titleEl = document.querySelector('.article-title');
-  const excerptEl = document.querySelector('.article-excerpt');
-  const bodyEl = document.querySelector('.article-body');
-  const catEl = document.querySelector('.article-category-label');
-  const authorEl = document.querySelector('.article-author');
-
-  const texts = [];
-  if (titleEl) texts.push(titleEl.textContent.trim());
-  if (excerptEl) texts.push(excerptEl.textContent.trim());
-  if (catEl && catEl.textContent.trim()) texts.push(catEl.textContent.trim());
-  if (authorEl) texts.push(authorEl.textContent.trim());
-  if (bodyEl && bodyEl.innerHTML.trim()) texts.push(bodyEl.innerHTML.trim());
-
-  if (texts.length === 0) return;
-
-  try {
-    const translated = await translateStrings(texts, SOURCE_LANG, lang);
-    let idx = 0;
-    if (titleEl) { titleEl.textContent = translated[idx++]; }
-    if (excerptEl) { excerptEl.textContent = translated[idx++]; }
-    if (catEl && catEl.textContent.trim()) { catEl.textContent = translated[idx++]; }
-    if (authorEl) { authorEl.textContent = translated[idx++]; }
-    if (bodyEl && bodyEl.innerHTML.trim()) { bodyEl.innerHTML = translated[idx++]; }
-  } catch {
-    // Fall back to source text — UI still works
   }
 }
 

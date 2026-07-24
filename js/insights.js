@@ -1,6 +1,6 @@
 import { fetchPublishedArticles, fetchCategories } from './cms-data.js';
 import { mountLayout } from './layout.js';
-import { getCurrentLang, SOURCE_LANG, applyTranslations, translateStrings } from './i18n.js';
+import { getCurrentLang, SOURCE_LANG, applyTranslations } from './i18n.js';
 
 let allArticles = [];
 let allCategories = [];
@@ -17,11 +17,18 @@ async function init() {
       fetchPublishedArticles(),
       fetchCategories(),
     ]);
-    allArticles = articles;
+    const lang = getCurrentLang();
+    allArticles = articles.map(a => lang === SOURCE_LANG ? a : {
+      ...a,
+      title: a[`title_${lang}`] || a.title,
+      excerpt: a[`excerpt_${lang}`] || a.excerpt,
+    });
     allCategories = categories;
 
     renderBlogPage(content);
-    await translateContent();
+    if (lang !== SOURCE_LANG) {
+      await applyTranslations(lang, document.getElementById('blog-content'));
+    }
   } catch (err) {
     content.innerHTML = `
       <div class="blog-empty">
@@ -124,31 +131,6 @@ function renderGrid() {
         </div>
       </a>`;
   }).join('');
-}
-
-async function translateContent() {
-  const lang = getCurrentLang();
-  if (lang === SOURCE_LANG) return;
-  await applyTranslations(lang, document.getElementById('blog-content'));
-
-  // Translate article titles and excerpts separately (they're dynamic)
-  const translatableEls = [];
-  document.querySelectorAll('.blog-card-title, .blog-card-excerpt, .blog-card-category').forEach(el => {
-    const text = el.textContent.trim();
-    if (text) translatableEls.push({ el, text });
-  });
-
-  if (translatableEls.length === 0) return;
-
-  const texts = translatableEls.map(t => t.text);
-  try {
-    const translated = await translateStrings(texts, SOURCE_LANG, lang);
-    translatableEls.forEach(({ el }, i) => {
-      el.textContent = translated[i];
-    });
-  } catch {
-    // Fall back to source text
-  }
 }
 
 function escapeHtml(str) {
