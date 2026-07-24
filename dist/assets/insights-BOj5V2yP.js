@@ -1,4 +1,4 @@
-import"./supabase-client-BRH4RlQG.js";import{q as h,d as m}from"./cms-data-DZNgpiV_.js";import{m as f,g as b,S as g,a as v,t as y}from"./layout-ChKH-CxM.js";let u=[],p=[],s="all",i="";async function x(){f("Insights");const e=document.getElementById("blog-content");try{const[a,t]=await Promise.all([h(),m()]);u=a,p=t,L(e),await C()}catch{e.innerHTML=`
+import"./supabase-client-Bm3kDcaW.js";import{q as h,d as m}from"./cms-data-Ci2-emH-.js";import{m as f,g as b,S as g,a as v,t as y}from"./layout-gl-hdcOQ.js";let u=[],p=[],s="all",i="";async function x(){f("Insights");const e=document.getElementById("blog-content");try{const[a,t]=await Promise.all([h(),m()]);u=a,p=t,L(e),await C()}catch{e.innerHTML=`
       <div class="blog-empty">
         <h3>Could not load articles</h3>
         <p>Please try again later.</p>
