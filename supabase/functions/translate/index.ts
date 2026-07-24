@@ -106,7 +106,7 @@ Deno.serve(async (req: Request) => {
       if (!apiKey) {
         for (const t of toTranslate) cache.set(t, t);
       } else {
-        const model = Deno.env.get("OPENROUTER_MODEL") || "openai/gpt-4o-mini";
+        const model = "openai/gpt-4o-mini";
         const targetName = LANG_NAMES[target_lang];
 
         const systemPrompt =
