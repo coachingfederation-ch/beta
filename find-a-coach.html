@@ -83,7 +83,8 @@
   <script type="module">
     import { mountLayout } from './js/layout.js';
     import { fetchCoaches, initials, credClass, REGIONS, SPECIALTIES, LANGUAGES, CREDENTIALS } from './js/supabase-client.js';
-    import { getCurrentLang, translateStrings, SOURCE_LANG } from './js/i18n.js';
+    import { getCurrentLang, translateBatch, SOURCE_LANG } from './js/i18n.js';
+    import { TAB_LABELS, TAB_TITLES, TAB_SUBS, DIRECTORY_UI_STRINGS } from './js/find-a-coach-strings.js';
 
     mountLayout('Find a Coach');
 
@@ -100,21 +101,9 @@
       error: null,
     };
 
-    const TAB_LABELS = { coach: 'coaches', mentor: 'mentors', supervisor: 'supervisors' };
-    const TAB_TITLES = { coach: 'Find a credentialed coach', mentor: 'Find a mentor for coaches', supervisor: 'Find a supervisor for coaches' };
-    const TAB_SUBS = {
-      coach: 'Every coach listed holds an active ICF credential and commits to the ICF Code of Ethics.',
-      mentor: 'ICF-credentialed mentor coaches to help you develop your coaching skills and prepare for your credential.',
-      supervisor: 'Experienced supervisors supporting coaches through reflective practice, ethics and professional growth.',
-    };
     // Cache of currently-translated strings so re-renders don't re-fetch.
     let i18nCache = {
       lang: SOURCE_LANG,
-      regionLabels: {},      // original -> translated
-      specialtyLabels: {},   // original -> translated
-      tabTitles: {},         // tab -> translated title
-      tabSubs: {},           // tab -> translated subtitle
-      statusMessages: {},    // key -> translated
       bios: {},              // coachId -> translated bio
     };
 
@@ -122,58 +111,35 @@
       return getCurrentLang();
     }
 
-    // ── Dynamic i18n helpers ───────────────────────────────
-    // These fixed UI strings are translated once per language and cached.
-    const UI_STRINGS = [
-      ...Object.values(TAB_TITLES),
-      ...Object.values(TAB_SUBS),
-      'coaches', 'mentors', 'supervisors',
-      'Loading…',
-      'Could not load coaches',
-      'No coaches match your filters',
-      'Try widening your region, credential or specialty.',
-      'Loading coaches…',
-      'Accepting new clients',
-      'Waitlist only',
-      'View profile',
-      'Clear all filters',
-      'All cantons',
-      ...REGIONS,
-      ...SPECIALTIES,
-    ];
-    const UI_INDEX = {};
-    UI_STRINGS.forEach((s, i) => { if (!(s in UI_INDEX)) UI_INDEX[s] = i; });
-    let uiTranslations = {}; // original -> translated
+    let uiTranslations = new Map(); // original -> translated
 
     async function ensureUiTranslated(lang) {
       if (i18nCache.lang === lang) return;
       if (lang === SOURCE_LANG) {
-        uiTranslations = {};
+        uiTranslations = new Map();
         i18nCache.lang = lang;
+        i18nCache.bios = {};
         return;
       }
-      const translated = await translateStrings(UI_STRINGS, SOURCE_LANG, lang);
-      uiTranslations = {};
-      UI_STRINGS.forEach((s, i) => { uiTranslations[s] = translated[i]; });
+      uiTranslations = await translateBatch(DIRECTORY_UI_STRINGS, lang);
       i18nCache.lang = lang;
       i18nCache.bios = {}; // reset bio cache on lang change
     }
 
     function t(original) {
       if (i18nCache.lang === SOURCE_LANG) return original;
-      return uiTranslations[original] || original;
+      return uiTranslations.get(original) || original;
     }
 
     async function ensureBiosTranslated(coaches, lang) {
       if (lang === SOURCE_LANG) return;
-      const need = coaches.filter(c => !i18nCache.bios[c.id]);
+      const need = coaches.filter(c => !i18nCache.bios[c.id] && c.bio);
       if (need.length === 0) return;
       // Group by source language so we translate from the right source.
       const bySource = {};
       need.forEach(c => {
         const sl = c.source_language || SOURCE_LANG;
         if (sl === lang) {
-          // Bio already in target language — no translation needed.
           i18nCache.bios[c.id] = c.bio;
         } else {
           if (!bySource[sl]) bySource[sl] = [];
@@ -181,8 +147,8 @@
         }
       });
       for (const [sl, group] of Object.entries(bySource)) {
-        const translated = await translateStrings(group.map(c => c.bio), sl, lang);
-        group.forEach((c, i) => { i18nCache.bios[c.id] = translated[i]; });
+        const map = await translateBatch(group.map(c => c.bio), lang, sl);
+        group.forEach((c) => { i18nCache.bios[c.id] = map.get(c.bio) || c.bio; });
       }
     }
 
@@ -299,13 +265,13 @@
       const count = document.getElementById('resultsCount');
 
       if (state.loading) {
-        grid.innerHTML = '<div class="loading-state"><div class="spinner"></div><p>Loading coaches…</p></div>';
-        count.textContent = 'Loading…';
+        grid.innerHTML = `<div class="loading-state"><div class="spinner"></div><p>${t('Loading coaches…')}</p></div>`;
+        count.textContent = t('Loading…');
         return;
       }
 
       if (state.error) {
-        grid.innerHTML = `<div class="empty"><h3>Could not load coaches</h3><p>${state.error}</p></div>`;
+        grid.innerHTML = `<div class="empty"><h3>${t('Could not load coaches')}</h3><p>${state.error}</p></div>`;
         count.textContent = '';
         return;
       }

@@ -1,4 +1,4 @@
-import{S as s,g as L,a as w}from"./i18n-CLQBegKv.js";import{t as x,d as $}from"./cms-data-TbRm3rQQ.js";import{m as C}from"./layout-D8U7-DMP.js";let h=[],m=[],d="all",l="",c=s;async function E(){C("Insights");const t=document.getElementById("blog-content");try{const[a,e]=await Promise.all([x(),$()]);m=e,c=L(),h=a,u(t),await o()}catch{t.innerHTML=`
+import{S as s,g as L,a as w}from"./i18n-BFKUt1vx.js";import{t as x,d as $}from"./cms-data-Biy4Ywpj.js";import{m as C}from"./layout-TQxx-FDu.js";let h=[],m=[],d="all",l="",c=s;async function E(){C("Insights");const t=document.getElementById("blog-content");try{const[a,e]=await Promise.all([x(),$()]);m=e,c=L(),h=a,u(t),await o()}catch{t.innerHTML=`
       <div class="blog-empty">
         <h3 data-i18n>Could not load articles</h3>
         <p data-i18n>Please try again later.</p>
@@ -12,7 +12,7 @@ import{S as s,g as L,a as w}from"./i18n-CLQBegKv.js";import{t as x,d as $}from".
     <div class="blog-grid" id="blogGrid"></div>`,S(),g()}function S(){const t=document.getElementById("blogToolbar");if(!t)return;const a=['<button class="blog-filter-chip active" data-cat="all" data-i18n>All</button>',...m.map(e=>`<button class="blog-filter-chip" data-cat="${n(e.id)}">${i(e.name)}</button>`)].join("");t.innerHTML=`
     <div class="blog-search">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--neutral-400)" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
-      <input type="text" id="blogSearch" placeholder="Search articles…" data-i18n>
+      <input type="text" id="blogSearch" placeholder="Search articles…" data-i18n-attr="placeholder">
     </div>
     ${a}`,document.getElementById("blogSearch").addEventListener("input",e=>{l=e.target.value.toLowerCase(),g()}),document.querySelectorAll("[data-cat]").forEach(e=>{e.addEventListener("click",()=>{document.querySelectorAll("[data-cat]").forEach(r=>r.classList.remove("active")),e.classList.add("active"),d=e.getAttribute("data-cat"),g()})})}function g(){const t=document.getElementById("blogGrid");if(!t)return;let a=h;if(d!=="all"&&(a=a.filter(e=>e.category_id===d)),l&&(a=a.filter(e=>e.title.toLowerCase().includes(l)||(e.excerpt||"").toLowerCase().includes(l)||(e.author||"").toLowerCase().includes(l))),a.length===0){t.innerHTML=`
       <div class="blog-empty">

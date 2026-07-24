@@ -71,7 +71,7 @@ function renderToolbar() {
   toolbar.innerHTML = `
     <div class="blog-search">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--neutral-400)" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
-      <input type="text" id="blogSearch" placeholder="Search articles…" data-i18n>
+      <input type="text" id="blogSearch" placeholder="Search articles…" data-i18n-attr="placeholder">
     </div>
     ${catChips}`;
 

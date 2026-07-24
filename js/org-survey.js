@@ -1,78 +1,6 @@
 import { supabase } from './supabase-client.js';
-
-const QUESTIONS = [
-  {
-    category: 'Leadership Engagement',
-    text: 'How would you rate leadership\u2019s active commitment to coaching in your organisation?',
-    hint: 'Consider visible sponsorship, resource allocation and personal participation',
-    dimension: 'leadership',
-  },
-  {
-    category: 'Leadership Engagement',
-    text: 'Do your senior leaders model coaching behaviours in their everyday interactions?',
-    hint: 'Listening, asking over telling, creating space for reflection',
-    dimension: 'leadership',
-  },
-  {
-    category: 'Coaching Capability',
-    text: 'To what extent have managers and leaders been trained in coaching skills?',
-    hint: 'Formal programmes, certifications or structured development',
-    dimension: 'capability',
-  },
-  {
-    category: 'Coaching Capability',
-    text: 'How embedded is coaching in your internal development and talent processes?',
-    hint: 'Onboarding, leadership pipelines, performance conversations',
-    dimension: 'capability',
-  },
-  {
-    category: 'Culture & Mindset',
-    text: 'How would you describe the prevailing communication culture in your organisation?',
-    hint: 'Openness, feedback, psychological safety, curiosity',
-    dimension: 'culture',
-  },
-  {
-    category: 'Culture & Mindset',
-    text: 'Is continuous learning and development visibly valued and practised?',
-    hint: 'Budget, time allocation, peer learning, knowledge sharing',
-    dimension: 'culture',
-  },
-  {
-    category: 'Measurement & Impact',
-    text: 'Does your organisation measure the impact of coaching initiatives?',
-    hint: 'Defined metrics, regular review, connecting coaching to outcomes',
-    dimension: 'measurement',
-  },
-  {
-    category: 'Measurement & Impact',
-    text: 'How well are coaching outcomes linked to your organisational goals?',
-    hint: 'Strategic alignment, leadership development, retention, wellbeing',
-    dimension: 'measurement',
-  },
-];
-
-const SCALE = [
-  { value: 1, label: 'Not yet present', hint: 'Little to no evidence' },
-  { value: 2, label: 'Emerging', hint: 'Early signs, ad hoc' },
-  { value: 3, label: 'Developing', hint: 'Growing, partially structured' },
-  { value: 4, label: 'Established', hint: 'Consistent and visible' },
-  { value: 5, label: 'Embedded', hint: 'Deeply part of how we work' },
-];
-
-const DIMENSION_LABELS = {
-  leadership: 'Leadership Engagement',
-  capability: 'Coaching Capability',
-  culture: 'Culture & Mindset',
-  measurement: 'Measurement & Impact',
-};
-
-const MATURITY_LEVELS = [
-  { max: 8, label: 'Starting Out', summary: 'Your organisation is at the beginning of its coaching journey. This is an exciting place to be \u2014 small, intentional steps can create significant shifts. Focus on building leadership awareness and introducing basic coaching skills to managers.' },
-  { max: 12, label: 'Taking Shape', summary: 'Coaching is emerging in your organisation. You have some foundational elements in place. The next step is to strengthen leadership sponsorship and begin structuring coaching capability more systematically.' },
-  { max: 16, label: 'Gaining Momentum', summary: 'Coaching is developing real traction. Your organisation has visible coaching practices and growing capability. Focus now on embedding coaching into talent processes and starting to measure its impact.' },
-  { max: 20, label: 'Well Established', summary: 'You have a strong coaching culture. Coaching is consistent, visible and valued across the organisation. The opportunity now is to deepen measurement, refine impact linkage, and ensure coaching reaches every level.' },
-  { max: 24, label: 'Coaching Maturity', summary: 'Your organisation exemplifies coaching maturity. Coaching is deeply embedded in how people lead, communicate and grow. Continue to innovate, share your story and mentor other organisations on the journey.' },
-];
+import { getCurrentLang, translateBatch, SOURCE_LANG } from './i18n.js';
+import { QUESTIONS, SCALE, DIMENSION_LABELS, MATURITY_LEVELS, getAllSurveyStrings } from './org-survey-strings.js';
 
 function getMaturity(score) {
   return MATURITY_LEVELS.find((m) => score <= m.max) || MATURITY_LEVELS[MATURITY_LEVELS.length - 1];
@@ -91,6 +19,30 @@ const state = {
   saved: false,
 };
 
+let surveyLang = SOURCE_LANG;
+let trMap = new Map();
+
+function tr(text) {
+  if (surveyLang === SOURCE_LANG) return text;
+  return trMap.get(text) || text;
+}
+
+function trProgress(current, total) {
+  return tr('Question {current} of {total}')
+    .replace('{current}', current)
+    .replace('{total}', total);
+}
+
+async function ensureSurveyTranslated(lang) {
+  if (lang === surveyLang) return;
+  if (lang === SOURCE_LANG) {
+    trMap = new Map();
+  } else {
+    trMap = await translateBatch(getAllSurveyStrings(), lang);
+  }
+  surveyLang = lang;
+}
+
 const questionsEl = document.getElementById('survey-questions');
 const resultsEl = document.getElementById('survey-results');
 const actionsEl = document.getElementById('survey-actions');
@@ -107,15 +59,15 @@ function renderQuestion() {
   const optionsHtml = SCALE.map((opt) => `
     <div class="survey-scale-option${opt.value === selectedValue ? ' selected' : ''}" data-value="${opt.value}" role="button" tabindex="0">
       <span class="survey-scale-radio"></span>
-      <span class="survey-scale-label">${opt.label}</span>
-      <span class="survey-scale-hint">${opt.hint}</span>
+      <span class="survey-scale-label">${tr(opt.label)}</span>
+      <span class="survey-scale-hint">${tr(opt.hint)}</span>
     </div>
   `).join('');
 
   questionsEl.innerHTML = `
     <div class="survey-question active">
-      <div class="survey-category-label">${q.category}</div>
-      <div class="survey-question-text">${q.text}</div>
+      <div class="survey-category-label">${tr(q.category)}</div>
+      <div class="survey-question-text">${tr(q.text)}</div>
       <div class="survey-scale">${optionsHtml}</div>
     </div>
   `;
@@ -144,7 +96,7 @@ function renderQuestion() {
 function updateProgress() {
   const pct = Math.round(((state.current + 1) / QUESTIONS.length) * 100);
   progressFill.style.width = pct + '%';
-  progressLabel.textContent = `Question ${state.current + 1} of ${QUESTIONS.length}`;
+  progressLabel.textContent = trProgress(state.current + 1, QUESTIONS.length);
   progressPercent.textContent = pct + '%';
 }
 
@@ -153,9 +105,9 @@ function updateButtons() {
   nextBtn.disabled = state.answers[state.current] === null;
 
   if (state.current === QUESTIONS.length - 1) {
-    nextBtn.textContent = 'See Results \u2192';
+    nextBtn.textContent = tr('See Results \u2192');
   } else {
-    nextBtn.textContent = 'Next \u2192';
+    nextBtn.textContent = tr('Next \u2192');
   }
 }
 
@@ -206,7 +158,7 @@ function renderResults() {
     return `
       <div class="survey-dimension">
         <div class="survey-dimension-header">
-          <span class="survey-dimension-name">${DIMENSION_LABELS[d]}</span>
+          <span class="survey-dimension-name">${tr(DIMENSION_LABELS[d])}</span>
           <span class="survey-dimension-score">${avg.toFixed(1)} / 5</span>
         </div>
         <div class="survey-dimension-bar">
@@ -219,38 +171,38 @@ function renderResults() {
   resultsEl.innerHTML = `
     <div class="survey-results-score">
       <div class="score-number">${totalScore}</div>
-      <div class="score-label">${maturity.label}</div>
-      <div class="score-range">out of 40 possible points</div>
+      <div class="score-label">${tr(maturity.label)}</div>
+      <div class="score-range">${tr('out of 40 possible points')}</div>
     </div>
     <div class="survey-dimensions">${dimsHtml}</div>
     <div class="survey-results-summary">
-      <h4>What this means</h4>
-      <p>${maturity.summary}</p>
+      <h4>${tr('What this means')}</h4>
+      <p>${tr(maturity.summary)}</p>
     </div>
     <div class="survey-contact-form" id="survey-contact-form">
-      <h4>Want a personalised follow-up?</h4>
-      <p>Leave your details and the ICF Switzerland team will reach out to discuss how coaching can support your organisation.</p>
+      <h4>${tr('Want a personalised follow-up?')}</h4>
+      <p>${tr('Leave your details and the ICF Switzerland team will reach out to discuss how coaching can support your organisation.')}</p>
       <div class="survey-form-row">
-        <input type="text" id="survey-org-name" placeholder="Organisation name" class="survey-input">
-        <input type="text" id="survey-person-name" placeholder="Your name" class="survey-input">
+        <input type="text" id="survey-org-name" placeholder="${tr('Organisation name')}" class="survey-input">
+        <input type="text" id="survey-person-name" placeholder="${tr('Your name')}" class="survey-input">
       </div>
       <div class="survey-form-row">
-        <input type="email" id="survey-email" placeholder="Work email" class="survey-input">
-        <input type="text" id="survey-role" placeholder="Your role (e.g. HR Director)" class="survey-input">
+        <input type="email" id="survey-email" placeholder="${tr('Work email')}" class="survey-input">
+        <input type="text" id="survey-role" placeholder="${tr('Your role (e.g. HR Director)')}" class="survey-input">
       </div>
       <label class="survey-consent">
         <input type="checkbox" id="survey-consent-check">
-        <span>Yes, I\u2019d like ICF Switzerland to contact me about coaching in my organisation.</span>
+        <span>${tr('Yes, I\u2019d like ICF Switzerland to contact me about coaching in my organisation.')}</span>
       </label>
       <div class="survey-form-actions">
-        <button class="btn btn-primary btn-lg" id="survey-submit-contact">Submit &amp; Share Results</button>
-        <button class="btn btn-secondary btn-lg" id="survey-skip-contact">No thanks</button>
+        <button class="btn btn-primary btn-lg" id="survey-submit-contact">${tr('Submit & Share Results')}</button>
+        <button class="btn btn-secondary btn-lg" id="survey-skip-contact">${tr('No thanks')}</button>
       </div>
       <div class="survey-form-status" id="survey-form-status"></div>
     </div>
     <div class="survey-results-actions" id="survey-final-actions" style="display:none">
-      <a href="find-a-coach.html" class="btn btn-primary btn-lg">Find a Coach</a>
-      <button class="btn btn-secondary btn-lg" id="survey-retake">Retake Assessment</button>
+      <a href="find-a-coach.html" class="btn btn-primary btn-lg">${tr('Find a Coach')}</a>
+      <button class="btn btn-secondary btn-lg" id="survey-retake">${tr('Retake Assessment')}</button>
     </div>
   `;
 
@@ -270,14 +222,14 @@ function renderResults() {
     const statusEl = document.getElementById('survey-form-status');
 
     if (!email || !consent) {
-      statusEl.textContent = 'Please enter your email and tick the consent box to submit.';
+      statusEl.textContent = tr('Please enter your email and tick the consent box to submit.');
       statusEl.className = 'survey-form-status error';
       return;
     }
 
     const btn = document.getElementById('survey-submit-contact');
     btn.disabled = true;
-    btn.textContent = 'Submitting\u2026';
+    btn.textContent = tr('Submitting\u2026');
 
     const { dims: d2, totalScore: ts, maturity: m2 } = computeResults();
     const answersData = QUESTIONS.map((q, i) => ({
@@ -299,15 +251,15 @@ function renderResults() {
     });
 
     if (error) {
-      statusEl.textContent = 'Something went wrong. Please try again.';
+      statusEl.textContent = tr('Something went wrong. Please try again.');
       statusEl.className = 'survey-form-status error';
       btn.disabled = false;
-      btn.textContent = 'Submit & Share Results';
+      btn.textContent = tr('Submit & Share Results');
       console.error('Survey contact save error:', error.message);
       return;
     }
 
-    statusEl.textContent = 'Thank you! We\u2019ll be in touch soon.';
+    statusEl.textContent = tr('Thank you! We\u2019ll be in touch soon.');
     statusEl.className = 'survey-form-status success';
     showFinalActions();
   });
@@ -351,4 +303,29 @@ backBtn.addEventListener('click', () => {
   }
 });
 
-renderQuestion();
+function rerender() {
+  if (state.finished) {
+    renderResults();
+  } else {
+    renderQuestion();
+  }
+}
+
+document.addEventListener('icf:langchange', async (e) => {
+  await ensureSurveyTranslated(e.detail.lang);
+  rerender();
+});
+
+async function init() {
+  const lang = getCurrentLang();
+  if (lang !== SOURCE_LANG) {
+    renderQuestion();
+    await ensureSurveyTranslated(lang);
+    rerender();
+  } else {
+    surveyLang = SOURCE_LANG;
+    renderQuestion();
+  }
+}
+
+init();

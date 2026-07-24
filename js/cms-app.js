@@ -949,7 +949,7 @@ async function renderSiteTranslations(main) {
           <div class="cms-site-trans-card-header">
             <h2>How it works</h2>
           </div>
-          <p class="cms-site-trans-explain">Every piece of static text on the website — navigation, buttons, headings, labels — is translated once and stored in the database. After that, switching languages on any page is instant: the site reads the stored translation directly, with no translation calls at page-view time.</p>
+          <p class="cms-site-trans-explain">Every piece of static text on the website — navigation, buttons, headings, labels, the coach directory and the coaching culture survey — is translated once and stored in the database. This also runs automatically every time the site is built and published. Anything still missing is translated live on first view and stored for everyone after that.</p>
           <p class="cms-site-trans-explain">Run this whenever you add new pages or change static text. It only translates strings that are not yet in the database — existing translations are kept.</p>
         </div>
 
@@ -994,19 +994,30 @@ function renderSiteTransStatusRows(status) {
   }).join('');
 }
 
-async function getSiteTranslationStatus() {
-  const status = {};
-  const totalStrings = SITE_STRINGS.length;
-  for (const lang of TARGET_LANGS) {
+const SITE_TRANS_CHUNK = 40;
+
+async function fetchExistingSiteTranslations(lang, texts) {
+  const existing = new Set();
+  for (let i = 0; i < texts.length; i += SITE_TRANS_CHUNK) {
+    const chunk = texts.slice(i, i + SITE_TRANS_CHUNK);
     const { data, error } = await supabase
       .from('translations')
       .select('source_text')
       .eq('source_lang', SOURCE_LANG)
       .eq('target_lang', lang)
-      .in('source_text', SITE_STRINGS);
+      .in('source_text', chunk);
     if (error) throw error;
-    const translated = (data || []).length;
-    status[lang] = { total: totalStrings, translated };
+    (data || []).forEach((r) => existing.add(r.source_text));
+  }
+  return existing;
+}
+
+async function getSiteTranslationStatus() {
+  const status = {};
+  const totalStrings = SITE_STRINGS.length;
+  for (const lang of TARGET_LANGS) {
+    const existing = await fetchExistingSiteTranslations(lang, SITE_STRINGS);
+    status[lang] = { total: totalStrings, translated: existing.size };
   }
   return status;
 }
@@ -1024,14 +1035,7 @@ async function handleRunSiteTranslations() {
   try {
     let totalTranslated = 0;
     for (const lang of TARGET_LANGS) {
-      const existing = new Set();
-      const { data } = await supabase
-        .from('translations')
-        .select('source_text')
-        .eq('source_lang', SOURCE_LANG)
-        .eq('target_lang', lang)
-        .in('source_text', SITE_STRINGS);
-      (data || []).forEach((r) => existing.add(r.source_text));
+      const existing = await fetchExistingSiteTranslations(lang, SITE_STRINGS);
 
       const missing = SITE_STRINGS.filter((s) => !existing.has(s));
       if (missing.length === 0) {
@@ -1039,17 +1043,14 @@ async function handleRunSiteTranslations() {
         continue;
       }
 
-      const translated = await translateStrings(missing, SOURCE_LANG, lang);
+      resultEl.innerHTML = `<p class="cms-site-trans-explain">${lang.toUpperCase()}: translating ${missing.length} strings…</p>`;
+      for (let i = 0; i < missing.length; i += SITE_TRANS_CHUNK) {
+        await translateStrings(missing.slice(i, i + SITE_TRANS_CHUNK), SOURCE_LANG, lang);
+      }
       // Verify translations actually persisted to DB
-      const { data: verifyData } = await supabase
-        .from('translations')
-        .select('source_text')
-        .eq('source_lang', SOURCE_LANG)
-        .eq('target_lang', lang)
-        .in('source_text', missing);
-      const persisted = (verifyData || []).map((r) => r.source_text);
-      const failed = missing.filter((s) => !persisted.includes(s));
-      totalTranslated += persisted.length;
+      const persistedSet = await fetchExistingSiteTranslations(lang, missing);
+      const failed = missing.filter((s) => !persistedSet.has(s));
+      totalTranslated += persistedSet.size;
       if (failed.length > 0) {
         console.warn(`Site translation: ${failed.length} strings for ${lang.toUpperCase()} were not persisted`, failed);
       }

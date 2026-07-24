@@ -22,12 +22,6 @@ export function setCurrentLang(lang) {
   localStorage.setItem(STORAGE_KEY, lang);
 }
 
-/**
- * Translate an array of source strings via the edge function.
- * Used by the CMS for article translation and site-text pre-translation.
- * NOT used at page-view time on the public site — the public site reads
- * pre-translated strings from the translations table directly.
- */
 export async function translateStrings(texts, sourceLang, targetLang) {
   if (!texts || texts.length === 0) return [];
   if (sourceLang === targetLang) return [...texts];
@@ -50,7 +44,74 @@ export async function translateStrings(texts, sourceLang, targetLang) {
   }
 }
 
-// ── Static UI text — pre-translated DB lookup ─────────────
+// ── Shared batch translation: DB lookup first, live edge-function
+// fallback for anything missing (which also caches it in the DB),
+// plus an in-memory cache per language pair for the session. ──
+
+const memoryCache = new Map();
+
+function cacheFor(sourceLang, targetLang) {
+  const key = `${sourceLang}->${targetLang}`;
+  if (!memoryCache.has(key)) memoryCache.set(key, new Map());
+  return memoryCache.get(key);
+}
+
+const DB_CHUNK = 40;
+
+export async function translateBatch(texts, targetLang, sourceLang = SOURCE_LANG) {
+  const result = new Map();
+  const unique = Array.from(new Set((texts || []).filter((t) => typeof t === 'string' && t.length > 0)));
+  if (sourceLang === targetLang) {
+    unique.forEach((t) => result.set(t, t));
+    return result;
+  }
+
+  const cache = cacheFor(sourceLang, targetLang);
+  const uncached = [];
+  for (const t of unique) {
+    if (cache.has(t)) result.set(t, cache.get(t));
+    else uncached.push(t);
+  }
+  if (uncached.length === 0) return result;
+
+  const stillMissing = [];
+  for (let i = 0; i < uncached.length; i += DB_CHUNK) {
+    const chunk = uncached.slice(i, i + DB_CHUNK);
+    const { data, error } = await supabase
+      .from('translations')
+      .select('source_text, target_text')
+      .eq('source_lang', sourceLang)
+      .eq('target_lang', targetLang)
+      .in('source_text', chunk);
+    if (error) {
+      console.warn('i18n: translation lookup failed', error);
+      stillMissing.push(...chunk);
+      continue;
+    }
+    const found = new Map((data || []).map((r) => [r.source_text, r.target_text]));
+    for (const t of chunk) {
+      if (found.has(t)) {
+        cache.set(t, found.get(t));
+        result.set(t, found.get(t));
+      } else {
+        stillMissing.push(t);
+      }
+    }
+  }
+
+  if (stillMissing.length > 0) {
+    const translated = await translateStrings(stillMissing, sourceLang, targetLang);
+    stillMissing.forEach((t, i) => {
+      const tr = translated[i] || t;
+      cache.set(t, tr);
+      result.set(t, tr);
+    });
+  }
+
+  return result;
+}
+
+// ── Static UI text ────────────────────────────────────────
 
 function collectTranslatable(root) {
   const scope = root || document;
@@ -87,12 +148,6 @@ function collectTranslatable(root) {
   return items;
 }
 
-/**
- * Look up pre-translated strings from the translations table and apply them.
- * Pure database lookup — no edge function call, no network latency beyond
- * the Supabase query itself. Falls back to English if a translation is
- * not found.
- */
 export async function applyTranslations(targetLang, root) {
   if (targetLang === SOURCE_LANG) {
     restoreOriginals(root);
@@ -125,24 +180,7 @@ export async function applyTranslations(targetLang, root) {
     return;
   }
 
-  const map = new Map();
-  const CHUNK = 40;
-  for (let i = 0; i < uniqueTexts.length; i += CHUNK) {
-    const chunk = uniqueTexts.slice(i, i + CHUNK);
-    const { data, error } = await supabase
-      .from('translations')
-      .select('source_text, target_text')
-      .eq('source_lang', SOURCE_LANG)
-      .eq('target_lang', targetLang)
-      .in('source_text', chunk);
-    if (error) {
-      console.warn('i18n: translation lookup failed', error);
-      break;
-    }
-    for (const row of data || []) {
-      map.set(row.source_text, row.target_text);
-    }
-  }
+  const map = await translateBatch(uniqueTexts, targetLang);
 
   applyMapToHead(titleEl, descEl, headTexts, map);
   applyMapToItems(items, map);

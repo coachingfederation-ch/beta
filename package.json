@@ -5,7 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "prebuild": "node scripts/extract-strings.js",
     "build": "vite build",
+    "postbuild": "node scripts/pretranslate.js",
+    "extract-strings": "node scripts/extract-strings.js",
+    "pretranslate": "node scripts/pretranslate.js",
     "preview": "vite preview"
   },
   "dependencies": {

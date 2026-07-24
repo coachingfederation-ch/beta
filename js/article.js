@@ -48,8 +48,6 @@ async function renderArticle(lang) {
   const related = await fetchRelatedArticles(article.id, article.category_id, 3);
   const relatedLocalized = related.map((a) => localizeArticle(a, lang));
 
-  const isTranslated = lang !== SOURCE_LANG;
-
   const heroImg = article.featured_image_url
     ? `<div class="article-hero-img"><img src="${escapeAttr(article.featured_image_url)}" alt="${escapeAttr(article.featured_image_alt || '')}"></div>`
     : '';
@@ -86,11 +84,7 @@ async function renderArticle(lang) {
     </article>
     ${relatedLocalized.length > 0 ? renderRelated(relatedLocalized) : ''}`;
 
-  if (isTranslated) {
-    await applyTranslations(lang, main);
-  } else {
-    await applyTranslations(lang, main);
-  }
+  await applyTranslations(lang, main);
 }
 
 function renderRelated(related) {
