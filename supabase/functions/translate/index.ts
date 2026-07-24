@@ -36,6 +36,14 @@ const CACHE_CHUNK = 40;
 // Max texts per OpenRouter call — balance speed vs. output reliability.
 const LLM_BATCH = 25;
 
+async function sha256Hex(input: string): Promise<string> {
+  const data = new TextEncoder().encode(input);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+  return Array.from(new Uint8Array(hashBuffer))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { status: 200, headers: corsHeaders });
@@ -174,14 +182,15 @@ Deno.serve(async (req: Request) => {
         await Promise.all(batchPromises);
 
         // 4. Persist the freshly translated texts to the memory bank.
-        const rows = toTranslate
+        const rows = await Promise.all(toTranslate
           .filter((t) => cache.get(t) && cache.get(t) !== t)
-          .map((t) => ({
+          .map(async (t) => ({
             source_lang,
             target_lang,
             source_text: t,
             target_text: cache.get(t)!,
-          }));
+            text_hash: await sha256Hex(`${source_lang}|${target_lang}|${t}`),
+          })));
 
         if (rows.length > 0) {
           const { error: insertErr } = await supabase

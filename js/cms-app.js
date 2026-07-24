@@ -1040,11 +1040,27 @@ async function handleRunSiteTranslations() {
       }
 
       const translated = await translateStrings(missing, SOURCE_LANG, lang);
-      totalTranslated += translated.length;
+      // Verify translations actually persisted to DB
+      const { data: verifyData } = await supabase
+        .from('translations')
+        .select('source_text')
+        .eq('source_lang', SOURCE_LANG)
+        .eq('target_lang', lang)
+        .in('source_text', missing);
+      const persisted = (verifyData || []).map((r) => r.source_text);
+      const failed = missing.filter((s) => !persisted.includes(s));
+      totalTranslated += persisted.length;
+      if (failed.length > 0) {
+        console.warn(`Site translation: ${failed.length} strings for ${lang.toUpperCase()} were not persisted`, failed);
+      }
     }
 
     if (myToken !== renderToken) return;
-    resultEl.innerHTML = `<div class="cms-site-trans-success">✓ Translated ${totalTranslated} strings across all languages. Language switching is now instant on every page.</div>`;
+    if (totalTranslated === 0) {
+      resultEl.innerHTML = `<div class="cms-site-trans-error">No strings were persisted. Check the browser console for details — the translation service may be unavailable.</div>`;
+    } else {
+      resultEl.innerHTML = `<div class="cms-site-trans-success">✓ Translated ${totalTranslated} strings across all languages. Language switching is now instant on every page.</div>`;
+    }
     btn.textContent = 'Re-run pre-translation';
     btn.disabled = false;
 
