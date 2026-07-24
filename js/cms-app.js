@@ -13,6 +13,85 @@ import { supabase } from './supabase-client.js';
 const TARGET_LANGS = ['de', 'fr', 'it'];
 const LANG_NATIVE = { de: 'Deutsch', fr: 'Français', it: 'Italiano' };
 
+// Long article bodies exceed the translation model's output limit and make
+// the translate function fail with a 500. Split the HTML on block-element
+// boundaries into chunks the model can handle, translate each chunk, rejoin.
+const BODY_CHUNK_LIMIT = 3000;
+
+function splitHtmlForTranslation(html) {
+  if (!html) return [];
+  if (html.length <= BODY_CHUNK_LIMIT) return [html];
+
+  const pack = (parts) => {
+    const chunks = [];
+    let current = '';
+    for (const part of parts) {
+      if (current && current.length + part.length > BODY_CHUNK_LIMIT) {
+        chunks.push(current);
+        current = '';
+      }
+      current += part;
+    }
+    if (current) chunks.push(current);
+    return chunks;
+  };
+  const splitOversized = (chunk, regex) =>
+    chunk.length > BODY_CHUNK_LIMIT ? pack(chunk.split(regex)) : [chunk];
+
+  // Cascade: block boundaries first, then <br> line breaks (content pasted
+  // from word processors is often one giant <p>), then after any tag.
+  let chunks = pack(html.split(/(?<=<\/(?:p|h[1-6]|ul|ol|blockquote|figure|table|div)>)/gi));
+  chunks = chunks.flatMap((c) => splitOversized(c, /(?<=<br[^>]*>)/gi));
+  chunks = chunks.flatMap((c) => splitOversized(c, /(?<=>)/g));
+  return chunks;
+}
+
+// The translate service also fails when the COMBINED payload of one request
+// is too large, so requests are batched by total character count.
+const REQUEST_CHAR_LIMIT = 4000;
+
+// Shared by manual "Translate now" and the publish auto-translation so both
+// paths behave identically. strict: a failure throws instead of silently
+// storing the English source text as the translation.
+async function translateArticleFields(lang) {
+  // The translate service only returns the first line of texts containing
+  // literal newlines. <br> is visually equivalent in this HTML content and
+  // survives translation intact; plain-text fields get spaces instead.
+  const bodyChunks = splitHtmlForTranslation(editorState.body || '')
+    .map((c) => c.replace(/\n/g, '<br>'));
+  const texts = [
+    (editorState.title || '').replace(/\n/g, ' '),
+    (editorState.excerpt || '').replace(/\n/g, ' '),
+    ...bodyChunks,
+  ];
+
+  const out = [];
+  let batch = [];
+  let batchSize = 0;
+  const flush = async () => {
+    if (batch.length === 0) return;
+    const translated = await translateStrings(batch, SOURCE_LANG, lang, { strict: true });
+    // Guard against the model silently dropping content — a drastically
+    // shorter result means an incomplete translation, not a valid one.
+    for (let i = 0; i < batch.length; i++) {
+      if (batch[i].length > 200 && translated[i].length < batch[i].length * 0.3) {
+        throw new Error(`Incomplete ${lang.toUpperCase()} translation — please try again.`);
+      }
+    }
+    out.push(...translated);
+    batch = [];
+    batchSize = 0;
+  };
+  for (const text of texts) {
+    if (batch.length > 0 && batchSize + text.length > REQUEST_CHAR_LIMIT) await flush();
+    batch.push(text);
+    batchSize += text.length;
+  }
+  await flush();
+
+  return { title: out[0], excerpt: out[1], body: out.slice(2).join('') };
+}
+
 const ALLOWED_DOMAIN = 'coachingfederation.ch';
 let currentEditor = null;
 let currentView = 'articles';
@@ -325,6 +404,10 @@ async function renderEditor(main) {
         fr: { title: article.title_fr || null, excerpt: article.excerpt_fr || null, body: article.body_fr || null },
         it: { title: article.title_it || null, excerpt: article.excerpt_it || null, body: article.body_it || null },
       },
+      // Hash of the source content at the time translations were last saved.
+      // Loaded from the DB so a manual "Translate now" survives editor reloads
+      // and publish does not needlessly re-translate (Bug 1).
+      _translationHash: article.translation_hash || null,
     };
 
     renderEditorContent(main);
@@ -655,6 +738,12 @@ async function saveArticle() {
 
 async function handlePublish() {
   if (!currentArticleId) return;
+  // Block publish while a manual translation is in flight so the two
+  // translation paths cannot run concurrently and overwrite each other.
+  if (isTranslating) {
+    alert('A translation is still running — please wait a moment, then publish.');
+    return;
+  }
   const newStatus = editorState.status === 'published' ? 'draft' : 'published';
 
   if (newStatus === 'published') {
@@ -673,23 +762,28 @@ async function handlePublish() {
       await saveArticle();
 
       const sourceHash = `${editorState.title}|${editorState.excerpt}|${editorState.body}`;
-      const needsTranslation = !editorState.translations?.de?.title || editorState._translationHash !== sourceHash;
+      // A stored translation is current only if the source content has not
+      // changed since translations were last saved (manual or auto).
+      const contentUnchanged = editorState._translationHash === sourceHash;
+      // Only auto-translate languages that do NOT already have a current
+      // translation — a manual "Translate now" for a language must not be
+      // overwritten by the publish flow (Bug 1).
+      const langsNeedingTranslation = TARGET_LANGS.filter((lang) => {
+        const tr = editorState.translations?.[lang];
+        const hasTranslation = tr && tr.title != null && tr.body != null;
+        return !hasTranslation || !contentUnchanged;
+      });
 
-      if (needsTranslation) {
-        updatePublishOverlayMessage('Translating into German, French and Italian…');
-        const sourceTexts = [editorState.title || '', editorState.excerpt || '', editorState.body || ''];
-        for (const lang of TARGET_LANGS) {
-          const [tTitle, tExcerpt, tBody] = await translateStrings(sourceTexts, SOURCE_LANG, lang);
-          editorState.translations[lang] = { title: tTitle, excerpt: tExcerpt, body: tBody };
-        }
+      if (langsNeedingTranslation.length > 0) {
+        isTranslating = true;
+        updatePublishOverlayMessage(`Translating into ${langsNeedingTranslation.map(l => LANG_NATIVE[l]).join(', ')}…`);
         const dbUpdates = {};
-        for (const lang of TARGET_LANGS) {
-          const tr = editorState.translations[lang];
-          if (tr && tr.title != null) {
-            dbUpdates[`title_${lang}`] = tr.title;
-            dbUpdates[`excerpt_${lang}`] = tr.excerpt;
-            dbUpdates[`body_${lang}`] = tr.body;
-          }
+        for (const lang of langsNeedingTranslation) {
+          const tr = await translateArticleFields(lang);
+          editorState.translations[lang] = tr;
+          dbUpdates[`title_${lang}`] = tr.title;
+          dbUpdates[`excerpt_${lang}`] = tr.excerpt;
+          dbUpdates[`body_${lang}`] = tr.body;
         }
         await saveArticleTranslations(editorState.id, dbUpdates, sourceHash);
         editorState._translationHash = sourceHash;
@@ -697,7 +791,7 @@ async function handlePublish() {
         updatePublishOverlayMessage('Translations already up to date — publishing…');
       }
 
-      const updated = await updateArticle(currentArticleId, {
+      await updateArticle(currentArticleId, {
         status: 'published',
         published_at: new Date().toISOString(),
       });
@@ -708,6 +802,8 @@ async function handlePublish() {
     } catch (err) {
       hidePublishOverlay();
       alert('Could not publish: ' + err.message);
+    } finally {
+      isTranslating = false;
     }
   } else {
     try {
@@ -1113,20 +1209,12 @@ async function handleTranslateNow(targetLang) {
   setTranslateBtnState(true);
   setRetranslateButtonsDisabled(true);
 
-  const sourceTexts = [
-    editorState.title || '',
-    editorState.excerpt || '',
-    editorState.body || '',
-  ];
-
   try {
     for (const lang of langsToTranslate) {
-      const [tTitle, tExcerpt, tBody] = await translateStrings(sourceTexts, SOURCE_LANG, lang);
-      editorState.translations[lang] = { title: tTitle, excerpt: tExcerpt, body: tBody };
+      editorState.translations[lang] = await translateArticleFields(lang);
     }
 
     const dbUpdates = {};
-    let changedHash = '';
     const sourceHash = `${editorState.title}|${editorState.excerpt}|${editorState.body}`;
     for (const lang of TARGET_LANGS) {
       const tr = editorState.translations[lang];
@@ -1134,11 +1222,13 @@ async function handleTranslateNow(targetLang) {
         dbUpdates[`title_${lang}`] = tr.title;
         dbUpdates[`excerpt_${lang}`] = tr.excerpt;
         dbUpdates[`body_${lang}`] = tr.body;
-        changedHash = sourceHash;
       }
     }
 
-    await saveArticleTranslations(editorState.id, dbUpdates, changedHash);
+    await saveArticleTranslations(editorState.id, dbUpdates, sourceHash);
+    // Record that translations now match the current source content, so the
+    // publish flow can skip auto-translation for these languages (Bug 1).
+    editorState._translationHash = sourceHash;
     renderEditorContent(document.getElementById('cmsMain'));
     showPanelToast('Translations saved.');
   } catch (err) {

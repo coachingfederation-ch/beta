@@ -22,7 +22,11 @@ export function setCurrentLang(lang) {
   localStorage.setItem(STORAGE_KEY, lang);
 }
 
-export async function translateStrings(texts, sourceLang, targetLang) {
+// strict: true makes failures throw instead of returning the source texts.
+// Callers that PERSIST translations (e.g. CMS article translation) must use
+// strict mode — otherwise a failed API call silently stores English text as
+// the "translation" and the language toggle appears broken.
+export async function translateStrings(texts, sourceLang, targetLang, { strict = false } = {}) {
   if (!texts || texts.length === 0) return [];
   if (sourceLang === targetLang) return [...texts];
 
@@ -39,6 +43,7 @@ export async function translateStrings(texts, sourceLang, targetLang) {
     }
     return data.translations;
   } catch (err) {
+    if (strict) throw err;
     console.warn('i18n: translation fell back to source text', err);
     return [...texts];
   }
