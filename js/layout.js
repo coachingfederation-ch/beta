@@ -46,7 +46,7 @@ export function renderFooter() {
   <footer class="site-footer">
     <div class="footer-grid">
       <div>
-        <img src="assets/logos/ICF_SwitzerlandCharterChapter_Horizontal_RGB_Positive.png" alt="ICF Switzerland Charter Chapter" style="height:48px;margin-bottom:18px;filter:brightness(0) invert(1)">
+        <img src="assets/logos/icf-switzerland-vertical-white.png" alt="ICF Switzerland" style="height:90px;margin-bottom:18px">
         <p style="font-size:14px;line-height:1.7;max-width:280px;margin:0 0 20px;color:var(--icf-indigo-200)">Building a more human future through professional coaching.</p>
         <div style="display:flex;gap:10px">
           <a href="#" class="social-link" aria-label="LinkedIn">
