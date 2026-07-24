@@ -89,7 +89,7 @@ export async function fetchPublishedArticleBySlug(slug) {
 export async function fetchRelatedArticles(articleId, categoryId, limit = 3) {
   let query = supabase
     .from('articles')
-    .select('id, title, slug, excerpt, featured_image_url, featured_image_alt, author, published_at, category:categories(name, slug)')
+    .select('id, title, slug, excerpt, title_de, title_fr, title_it, excerpt_de, excerpt_fr, excerpt_it, featured_image_url, featured_image_alt, author, published_at, category:categories(name, slug)')
     .eq('status', 'published')
     .neq('id', articleId)
     .order('published_at', { ascending: false, nullsFirst: false })

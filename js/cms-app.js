@@ -7,6 +7,8 @@ import {
   saveArticleTranslations,
 } from './cms-data.js';
 import { LANGS, SOURCE_LANG, translateStrings } from './i18n.js';
+import { SITE_STRINGS, TARGET_LANGS as SITE_TARGET_LANGS } from './site-strings.js';
+import { supabase } from './supabase-client.js';
 
 const TARGET_LANGS = ['de', 'fr', 'it'];
 const LANG_NATIVE = { de: 'Deutsch', fr: 'Français', it: 'Italiano' };
@@ -76,6 +78,7 @@ function renderSidebar() {
     { id: 'articles', label: 'Articles', icon: '<path d="M4 4h13a3 3 0 0 1 3 3v13H7a3 3 0 0 1-3-3V4Z"></path><path d="M8 9h8M8 13h8M8 17h5"></path>' },
     { id: 'editor', label: 'Editor', icon: '<path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path>' },
     { id: 'taxonomy', label: 'Categories & Tags', icon: '<path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0l-7-7V3h10.6l7 7a2 2 0 0 1 0 2.8Z"></path><circle cx="7.5" cy="7.5" r="1.3" fill="currentColor" stroke="none"></circle>' },
+    { id: 'site-translations', label: 'Site Translations', icon: '<path d="M4 5h16M4 12h16M4 19h16"></path><path d="M7 5v14M17 5v14"></path>' },
   ];
 
   const navHtml = navItems.map(item => `
@@ -135,6 +138,7 @@ function renderView() {
   if (currentView === 'articles') renderArticlesList(main);
   else if (currentView === 'editor') renderEditor(main);
   else if (currentView === 'taxonomy') renderTaxonomy(main);
+  else if (currentView === 'site-translations') renderSiteTranslations(main);
 }
 
 // ── Articles list ─────────────────────────────────────────
@@ -644,17 +648,137 @@ async function saveArticle() {
 async function handlePublish() {
   if (!currentArticleId) return;
   const newStatus = editorState.status === 'published' ? 'draft' : 'published';
-  const updates = {
-    status: newStatus,
-    published_at: newStatus === 'published' ? new Date().toISOString() : null,
-  };
+
+  if (newStatus === 'published') {
+    const hasTitle = editorState.title && editorState.title.trim() && editorState.title.trim() !== 'Untitled article';
+    const hasBody = editorState.body && editorState.body.replace(/<[^>]*>/g, '').trim().length > 0;
+
+    if (!hasTitle || !hasBody) {
+      showPublishOverlay('warning', 'Article has no content',
+        'This article is missing a title or body text. It will be published without translations — visitors will see the English version in all languages. Continue?');
+      return;
+    }
+
+    showPublishOverlay('translating');
+
+    try {
+      await saveArticle();
+
+      const sourceHash = `${editorState.title}|${editorState.excerpt}|${editorState.body}`;
+      const needsTranslation = !editorState.translations?.de?.title || editorState._translationHash !== sourceHash;
+
+      if (needsTranslation) {
+        updatePublishOverlayMessage('Translating into German, French and Italian…');
+        const sourceTexts = [editorState.title || '', editorState.excerpt || '', editorState.body || ''];
+        for (const lang of TARGET_LANGS) {
+          const [tTitle, tExcerpt, tBody] = await translateStrings(sourceTexts, SOURCE_LANG, lang);
+          editorState.translations[lang] = { title: tTitle, excerpt: tExcerpt, body: tBody };
+        }
+        const dbUpdates = {};
+        for (const lang of TARGET_LANGS) {
+          const tr = editorState.translations[lang];
+          if (tr && tr.title != null) {
+            dbUpdates[`title_${lang}`] = tr.title;
+            dbUpdates[`excerpt_${lang}`] = tr.excerpt;
+            dbUpdates[`body_${lang}`] = tr.body;
+          }
+        }
+        await saveArticleTranslations(editorState.id, dbUpdates, sourceHash);
+        editorState._translationHash = sourceHash;
+      } else {
+        updatePublishOverlayMessage('Translations already up to date — publishing…');
+      }
+
+      const updated = await updateArticle(currentArticleId, {
+        status: 'published',
+        published_at: new Date().toISOString(),
+      });
+      editorState.status = 'published';
+      hidePublishOverlay();
+      renderEditorContent(document.getElementById('cmsMain'));
+      showPanelToast('Article published with translations.');
+    } catch (err) {
+      hidePublishOverlay();
+      alert('Could not publish: ' + err.message);
+    }
+  } else {
+    try {
+      await saveArticle();
+      await updateArticle(currentArticleId, { status: 'draft', published_at: null });
+      editorState.status = 'draft';
+      renderEditorContent(document.getElementById('cmsMain'));
+    } catch (err) {
+      alert('Could not change publish status: ' + err.message);
+    }
+  }
+}
+
+function showPublishOverlay(type, title, message) {
+  hidePublishOverlay();
+  const overlay = document.createElement('div');
+  overlay.className = 'cms-publish-overlay';
+  overlay.id = 'publishOverlay';
+
+  if (type === 'translating') {
+    overlay.innerHTML = `
+      <div class="cms-publish-card">
+        <div class="cms-publish-spinner"></div>
+        <h3 id="publishOverlayTitle">Translating and publishing…</h3>
+        <p id="publishOverlayMessage">Saving your article…</p>
+        <p class="cms-publish-hint">The editor is locked while translations are generated. This usually takes 5–15 seconds.</p>
+      </div>`;
+  } else if (type === 'warning') {
+    overlay.innerHTML = `
+      <div class="cms-publish-card">
+        <div class="cms-publish-warning-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+        </div>
+        <h3>${escapeHtml(title)}</h3>
+        <p>${escapeHtml(message)}</p>
+        <div class="cms-publish-actions">
+          <button class="cms-topbar-btn" id="publishCancel">Cancel</button>
+          <button class="cms-topbar-publish" id="publishForce">Publish anyway</button>
+        </div>
+      </div>`;
+  }
+
+  document.body.appendChild(overlay);
+  requestAnimationFrame(() => overlay.classList.add('visible'));
+
+  if (type === 'warning') {
+    document.getElementById('publishCancel').addEventListener('click', hidePublishOverlay);
+    document.getElementById('publishForce').addEventListener('click', async () => {
+      hidePublishOverlay();
+      await forcePublishWithoutTranslation();
+    });
+  }
+}
+
+function updatePublishOverlayMessage(msg) {
+  const el = document.getElementById('publishOverlayMessage');
+  if (el) el.textContent = msg;
+}
+
+function hidePublishOverlay() {
+  const overlay = document.getElementById('publishOverlay');
+  if (overlay) {
+    overlay.classList.remove('visible');
+    setTimeout(() => overlay.remove(), 200);
+  }
+}
+
+async function forcePublishWithoutTranslation() {
   try {
     await saveArticle();
-    const updated = await updateArticle(currentArticleId, updates);
-    editorState.status = newStatus;
+    await updateArticle(currentArticleId, {
+      status: 'published',
+      published_at: new Date().toISOString(),
+    });
+    editorState.status = 'published';
     renderEditorContent(document.getElementById('cmsMain'));
+    showPanelToast('Article published (no translations generated).');
   } catch (err) {
-    alert('Could not change publish status: ' + err.message);
+    alert('Could not publish: ' + err.message);
   }
 }
 
@@ -794,7 +918,133 @@ async function handleAddTagTax() {
   }
 }
 
-// ── Translation helpers ──────────────────────────────────
+// ── Site Translations view ───────────────────────────────
+async function renderSiteTranslations(main) {
+  main.innerHTML = `<div style="padding:40px;text-align:center;color:var(--text-muted)">Loading…</div>`;
+
+  try {
+    const status = await getSiteTranslationStatus();
+
+    main.innerHTML = `
+      <div class="cms-page-header">
+        <div>
+          <h1>Site Translations</h1>
+          <p class="cms-subtitle">Pre-translate all static UI text so language switching is instant for visitors.</p>
+        </div>
+      </div>
+      <div class="cms-site-trans-body">
+        <div class="cms-site-trans-card">
+          <div class="cms-site-trans-card-header">
+            <h2>How it works</h2>
+          </div>
+          <p class="cms-site-trans-explain">Every piece of static text on the website — navigation, buttons, headings, labels — is translated once and stored in the database. After that, switching languages on any page is instant: the site reads the stored translation directly, with no translation calls at page-view time.</p>
+          <p class="cms-site-trans-explain">Run this whenever you add new pages or change static text. It only translates strings that are not yet in the database — existing translations are kept.</p>
+        </div>
+
+        <div class="cms-site-trans-card">
+          <div class="cms-site-trans-card-header">
+            <h2>Translation status</h2>
+          </div>
+          ${renderSiteTransStatusRows(status)}
+        </div>
+
+        <div class="cms-site-trans-card">
+          <div class="cms-site-trans-card-header">
+            <h2>Run pre-translation</h2>
+          </div>
+          <p class="cms-site-trans-explain">Translates ${SITE_STRINGS.length} static strings into German, French and Italian. Only missing strings are translated — existing ones are skipped.</p>
+          <button class="cms-translate-btn" id="siteTransRunBtn">Translate site text now</button>
+          <div class="cms-site-trans-result" id="siteTransResult"></div>
+        </div>
+      </div>`;
+
+    const runBtn = document.getElementById('siteTransRunBtn');
+    if (runBtn) runBtn.addEventListener('click', handleRunSiteTranslations);
+  } catch (err) {
+    main.innerHTML = `<div class="cms-empty"><h3>Could not load</h3><p>${escapeHtml(err.message)}</p></div>`;
+  }
+}
+
+function renderSiteTransStatusRows(status) {
+  const langNames = { de: 'Deutsch', fr: 'Français', it: 'Italiano' };
+  return TARGET_LANGS.map((lang) => {
+    const s = status[lang] || { total: 0, translated: 0 };
+    const pct = s.total > 0 ? Math.round((s.translated / s.total) * 100) : 0;
+    const isComplete = pct === 100;
+    return `
+      <div class="cms-site-trans-row">
+        <span class="cms-site-trans-lang">${langNames[lang]}</span>
+        <div class="cms-site-trans-bar-wrap">
+          <div class="cms-site-trans-bar" style="width:${pct}%"></div>
+        </div>
+        <span class="cms-site-trans-count ${isComplete ? 'cms-site-trans-count-done' : ''}">${s.translated}/${s.total} ${isComplete ? '✓' : ''}</span>
+      </div>`;
+  }).join('');
+}
+
+async function getSiteTranslationStatus() {
+  const status = {};
+  const totalStrings = SITE_STRINGS.length;
+  for (const lang of TARGET_LANGS) {
+    const { data, error } = await supabase
+      .from('translations')
+      .select('source_text')
+      .eq('source_lang', SOURCE_LANG)
+      .eq('target_lang', lang)
+      .in('source_text', SITE_STRINGS);
+    if (error) throw error;
+    const translated = (data || []).length;
+    status[lang] = { total: totalStrings, translated };
+  }
+  return status;
+}
+
+async function handleRunSiteTranslations() {
+  const btn = document.getElementById('siteTransRunBtn');
+  const resultEl = document.getElementById('siteTransResult');
+  if (!btn || !resultEl) return;
+
+  btn.disabled = true;
+  btn.textContent = 'Translating…';
+  resultEl.innerHTML = '<p class="cms-site-trans-explain">Translating site text into German, French and Italian…</p>';
+
+  try {
+    let totalTranslated = 0;
+    for (const lang of TARGET_LANGS) {
+      const existing = new Set();
+      const { data } = await supabase
+        .from('translations')
+        .select('source_text')
+        .eq('source_lang', SOURCE_LANG)
+        .eq('target_lang', lang)
+        .in('source_text', SITE_STRINGS);
+      (data || []).forEach((r) => existing.add(r.source_text));
+
+      const missing = SITE_STRINGS.filter((s) => !existing.has(s));
+      if (missing.length === 0) {
+        resultEl.innerHTML = `<p class="cms-site-trans-explain">${lang.toUpperCase()}: already fully translated.</p>`;
+        continue;
+      }
+
+      const translated = await translateStrings(missing, SOURCE_LANG, lang);
+      totalTranslated += translated.length;
+    }
+
+    resultEl.innerHTML = `<div class="cms-site-trans-success">✓ Translated ${totalTranslated} strings across all languages. Language switching is now instant on every page.</div>`;
+    btn.textContent = 'Re-run pre-translation';
+    btn.disabled = false;
+
+    const status = await getSiteTranslationStatus();
+    document.querySelector('.cms-site-trans-card:nth-child(2)').innerHTML =
+      '<div class="cms-site-trans-card-header"><h2>Translation status</h2></div>' + renderSiteTransStatusRows(status);
+  } catch (err) {
+    resultEl.innerHTML = `<div class="cms-site-trans-error">Translation failed: ${escapeHtml(err.message)}</div>`;
+    btn.textContent = 'Translate site text now';
+    btn.disabled = false;
+  }
+}
+
+// ── Article translation helpers ──────────────────────────
 function renderLangTab(lang) {
   const tr = editorState.translations[lang] || {};
   const hasTitle = tr.title != null;

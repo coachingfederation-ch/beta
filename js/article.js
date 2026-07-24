@@ -27,15 +27,18 @@ async function init() {
       return;
     }
     currentArticle = article;
-    const lang = getCurrentLang();
-    const localized = localizeArticle(article, lang);
-    await renderArticle(localized, lang);
+    await renderArticle(getCurrentLang());
   } catch (err) {
     renderError(err);
   }
+
+  document.addEventListener('icf:langchange', (e) => {
+    if (currentArticle) renderArticle(e.detail.lang);
+  });
 }
 
-async function renderArticle(article, lang) {
+async function renderArticle(lang) {
+  const article = localizeArticle(currentArticle, lang);
   document.title = `${article.title} — ICF Switzerland Insights`;
 
   const descEl = document.querySelector('meta[name="description"]');
@@ -43,7 +46,7 @@ async function renderArticle(article, lang) {
 
   const tags = await fetchArticleTags(article.id);
   const related = await fetchRelatedArticles(article.id, article.category_id, 3);
-  const relatedLocalized = related.map(a => localizeArticle(a, lang));
+  const relatedLocalized = related.map((a) => localizeArticle(a, lang));
 
   const isTranslated = lang !== SOURCE_LANG;
 
@@ -52,7 +55,7 @@ async function renderArticle(article, lang) {
     : '';
 
   const tagHtml = tags.length > 0
-    ? `<div class="article-tags">${tags.map(t => `<span class="article-tag">${escapeHtml(t.name)}</span>`).join('')}</div>`
+    ? `<div class="article-tags">${tags.map((t) => `<span class="article-tag">${escapeHtml(t.name)}</span>`).join('')}</div>`
     : '';
 
   const pubDate = article.published_at
@@ -67,11 +70,11 @@ async function renderArticle(article, lang) {
         <span class="article-breadcrumb-sep">/</span>
         <span>${escapeHtml(article.category?.name || 'Article')}</span>
       </div>
-      <span class="icf-overline article-category-label" data-i18n>${escapeHtml(article.category?.name || '')}</span>
-      <h1 class="article-title" data-i18n>${escapeHtml(article.title)}</h1>
-      <p class="article-excerpt" data-i18n>${escapeHtml(article.excerpt)}</p>
+      <span class="icf-overline article-category-label">${escapeHtml(article.category?.name || '')}</span>
+      <h1 class="article-title">${escapeHtml(article.title)}</h1>
+      <p class="article-excerpt">${escapeHtml(article.excerpt)}</p>
       <div class="article-meta">
-        <span class="article-author" data-i18n>By ${escapeHtml(article.author)}</span>
+        <span class="article-author"><span data-i18n>By</span> ${escapeHtml(article.author)}</span>
         <span class="article-date">${pubDate}</span>
       </div>
       ${heroImg}
@@ -83,14 +86,15 @@ async function renderArticle(article, lang) {
     </article>
     ${relatedLocalized.length > 0 ? renderRelated(relatedLocalized) : ''}`;
 
-  // Re-apply UI translations for surrounding elements
   if (isTranslated) {
-    applyTranslations(lang, main);
+    await applyTranslations(lang, main);
+  } else {
+    await applyTranslations(lang, main);
   }
 }
 
 function renderRelated(related) {
-  const cards = related.map(a => {
+  const cards = related.map((a) => {
     const img = a.featured_image_url
       ? `<div class="related-card-img"><img src="${escapeAttr(a.featured_image_url)}" alt="${escapeAttr(a.featured_image_alt || '')}" loading="lazy"></div>`
       : `<div class="related-card-img related-card-placeholder"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--text-subtle)" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg></div>`;
@@ -101,8 +105,8 @@ function renderRelated(related) {
       <a href="article.html?slug=${escapeAttr(a.slug)}" class="related-card">
         ${img}
         <div class="related-card-body">
-          <span class="icf-overline" data-i18n>${escapeHtml(a.category?.name || '')}</span>
-          <span class="related-card-title" data-i18n>${escapeHtml(a.title)}</span>
+          <span class="icf-overline">${escapeHtml(a.category?.name || '')}</span>
+          <span class="related-card-title">${escapeHtml(a.title)}</span>
           <span class="related-card-date">${date}</span>
         </div>
       </a>`;
@@ -118,18 +122,18 @@ function renderRelated(related) {
 function renderNotFound() {
   document.getElementById('article-content').innerHTML = `
     <div class="article-not-found">
-      <h1>Article not found</h1>
-      <p>The article you are looking for may have been moved or is no longer available.</p>
-      <a href="insights.html" class="btn btn-primary btn-md">Back to Insights</a>
+      <h1 data-i18n>Article not found</h1>
+      <p data-i18n>The article you are looking for may have been moved or is no longer available.</p>
+      <a href="insights.html" class="btn btn-primary btn-md" data-i18n>Back to Insights</a>
     </div>`;
 }
 
-function renderError(err) {
+function renderError() {
   document.getElementById('article-content').innerHTML = `
     <div class="article-not-found">
-      <h1>Something went wrong</h1>
-      <p>We could not load this article. Please try again later.</p>
-      <a href="insights.html" class="btn btn-primary btn-md">Back to Insights</a>
+      <h1 data-i18n>Something went wrong</h1>
+      <p data-i18n>We could not load this article. Please try again later.</p>
+      <a href="insights.html" class="btn btn-primary btn-md" data-i18n>Back to Insights</a>
     </div>`;
 }
 
