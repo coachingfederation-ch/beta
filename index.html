@@ -96,37 +96,7 @@
   </section>
 
   <!-- ── COACHING IN ACTION ───────────────────────────────── -->
-  <section style="max-width:var(--container-2xl);margin:0 auto;padding:96px var(--gutter)">
-    <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:24px;margin-bottom:48px;flex-wrap:wrap">
-      <div style="max-width:560px">
-        <p class="icf-overline" style="margin:0 0 14px" data-i18n>Coaching in Action</p>
-        <h2 style="font-size:clamp(30px,3.6vw,46px);font-weight:var(--fw-extrabold);letter-spacing:-0.02em;color:var(--text-strong);line-height:1.1;margin:0" data-i18n>Building a more human future</h2>
-      </div>
-      <a href="insights.html" class="btn btn-secondary btn-md" data-i18n>Explore Insights</a>
-    </div>
-    <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:20px" class="insight-grid">
-      <a href="insights.html" class="insight-card">
-        <div class="insight-img"><img src="https://images.pexels.com/photos/3196056/pexels-photo-3196056.jpeg?auto=compress&cs=tinysrgb&w=600" alt="Future of Work" loading="lazy"></div>
-        <span class="icf-overline" data-i18n>Future of Work</span>
-        <span class="title" data-i18n>How coaching prepares people for what work becomes next</span>
-      </a>
-      <a href="insights.html" class="insight-card">
-        <div class="insight-img"><img src="https://images.pexels.com/photos/1181406/pexels-photo-1181406.jpeg?auto=compress&cs=tinysrgb&w=600" alt="Leadership" loading="lazy"></div>
-        <span class="icf-overline" data-i18n>Leadership</span>
-        <span class="title" data-i18n>Better conversations create better leaders</span>
-      </a>
-      <a href="insights.html" class="insight-card">
-        <div class="insight-img"><img src="https://images.pexels.com/photos/9275222/pexels-photo-9275222.jpeg?auto=compress&cs=tinysrgb&w=600" alt="AI & Coaching" loading="lazy"></div>
-        <span class="icf-overline" data-i18n>AI &amp; Coaching</span>
-        <span class="title" data-i18n>Why trusted human conversations matter more than ever</span>
-      </a>
-      <a href="insights.html" class="insight-card">
-        <div class="insight-img"><img src="https://images.pexels.com/photos/3760067/pexels-photo-3760067.jpeg?auto=compress&cs=tinysrgb&w=600" alt="Diversity & Inclusion" loading="lazy"></div>
-        <span class="icf-overline" data-i18n>Diversity &amp; Inclusion</span>
-        <span class="title" data-i18n>Coaching that welcomes every perspective</span>
-      </a>
-    </div>
-  </section>
+  <div id="latest-insights-root"></div>
 
   <!-- ── FOR ORGANISATIONS ────────────────────────────────── -->
   <section style="background:var(--surface-subtle)">
@@ -312,5 +282,6 @@
     import { mountLayout } from './js/layout.js';
     mountLayout('Home');
   </script>
+  <script type="module" src="./js/latest-insights-mount.js"></script>
 </body>
 </html>

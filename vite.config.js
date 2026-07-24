@@ -25,6 +25,12 @@ export default defineConfig({
       },
     },
   },
+  esbuild: {
+    loader: 'jsx',
+    include: [/\.jsx$/],
+    jsxImportSource: 'react',
+    jsx: 'automatic',
+  },
   optimizeDeps: {
     exclude: ['@electric-sql/pglite'],
   },
