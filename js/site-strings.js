@@ -143,8 +143,6 @@ export const SITE_STRINGS = [
   "Contact us about Pro Bono Coaching",
   "Coaching in organisations — a deeper dive.",
   "Explore how coaching transforms organisations from within — the research, the frameworks and the Swiss context.",
-  "Webslide coming soon",
-  "An interactive presentation with more content on coaching in organisations will be embedded here. You will be able to build it with Bolt and drop the embed link in.",
   "Coaching Culture Assessment",
   "How mature is your organisation's coaching culture?",
   "Answer eight quick questions across four dimensions. Get an instant snapshot of where your organisation stands — and where coaching can take it next.",
