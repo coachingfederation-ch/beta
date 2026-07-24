@@ -1,0 +1,143 @@
+import {
+  fetchPublishedArticleBySlug,
+  fetchRelatedArticles,
+  fetchArticleTags,
+  localizeArticle,
+} from './cms-data.js';
+import { mountLayout } from './layout.js';
+import { getCurrentLang, SOURCE_LANG, applyTranslations } from './i18n.js';
+
+let currentArticle = null;
+
+async function init() {
+  mountLayout('Insights');
+
+  const params = new URLSearchParams(window.location.search);
+  const slug = params.get('slug');
+
+  if (!slug) {
+    renderNotFound();
+    return;
+  }
+
+  try {
+    const article = await fetchPublishedArticleBySlug(slug);
+    if (!article) {
+      renderNotFound();
+      return;
+    }
+    currentArticle = article;
+    await renderArticle(getCurrentLang());
+  } catch (err) {
+    renderError(err);
+  }
+
+  document.addEventListener('icf:langchange', (e) => {
+    if (currentArticle) renderArticle(e.detail.lang);
+  });
+}
+
+async function renderArticle(lang) {
+  const article = localizeArticle(currentArticle, lang);
+  document.title = `${article.title} — ICF Switzerland Insights`;
+
+  const descEl = document.querySelector('meta[name="description"]');
+  if (descEl) descEl.setAttribute('content', article.excerpt || article.title);
+
+  const tags = await fetchArticleTags(article.id);
+  const related = await fetchRelatedArticles(article.id, article.category_id, 3);
+  const relatedLocalized = related.map((a) => localizeArticle(a, lang));
+
+  const heroImg = article.featured_image_url
+    ? `<div class="article-hero-img"><img src="${escapeAttr(article.featured_image_url)}" alt="${escapeAttr(article.featured_image_alt || '')}"></div>`
+    : '';
+
+  const tagHtml = tags.length > 0
+    ? `<div class="article-tags">${tags.map((t) => `<span class="article-tag">${escapeHtml(t.name)}</span>`).join('')}</div>`
+    : '';
+
+  const pubDate = article.published_at
+    ? new Date(article.published_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
+    : '';
+
+  const main = document.getElementById('article-content');
+  main.innerHTML = `
+    <article class="article-detail">
+      <div class="article-breadcrumb">
+        <a href="insights.html" data-i18n>Insights</a>
+        <span class="article-breadcrumb-sep">/</span>
+        <span>${escapeHtml(article.category?.name || 'Article')}</span>
+      </div>
+      <span class="icf-overline article-category-label">${escapeHtml(article.category?.name || '')}</span>
+      <h1 class="article-title">${escapeHtml(article.title)}</h1>
+      <p class="article-excerpt">${escapeHtml(article.excerpt)}</p>
+      <div class="article-meta">
+        <span class="article-author"><span data-i18n>By</span> ${escapeHtml(article.author)}</span>
+        <span class="article-date">${pubDate}</span>
+      </div>
+      ${heroImg}
+      <div class="article-body">${article.body || ''}</div>
+      ${tagHtml}
+      <div class="article-back">
+        <a href="insights.html" class="btn btn-secondary btn-md" data-i18n>&larr; Back to Insights</a>
+      </div>
+    </article>
+    ${relatedLocalized.length > 0 ? renderRelated(relatedLocalized) : ''}`;
+
+  await applyTranslations(lang, main);
+}
+
+function renderRelated(related) {
+  const cards = related.map((a) => {
+    const img = a.featured_image_url
+      ? `<div class="related-card-img"><img src="${escapeAttr(a.featured_image_url)}" alt="${escapeAttr(a.featured_image_alt || '')}" loading="lazy"></div>`
+      : `<div class="related-card-img related-card-placeholder"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--text-subtle)" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg></div>`;
+    const date = a.published_at
+      ? new Date(a.published_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+      : '';
+    return `
+      <a href="article.html?slug=${escapeAttr(a.slug)}" class="related-card">
+        ${img}
+        <div class="related-card-body">
+          <span class="icf-overline">${escapeHtml(a.category?.name || '')}</span>
+          <span class="related-card-title">${escapeHtml(a.title)}</span>
+          <span class="related-card-date">${date}</span>
+        </div>
+      </a>`;
+  }).join('');
+
+  return `
+    <section class="article-related">
+      <h2 data-i18n>Related articles</h2>
+      <div class="related-grid">${cards}</div>
+    </section>`;
+}
+
+function renderNotFound() {
+  document.getElementById('article-content').innerHTML = `
+    <div class="article-not-found">
+      <h1 data-i18n>Article not found</h1>
+      <p data-i18n>The article you are looking for may have been moved or is no longer available.</p>
+      <a href="insights.html" class="btn btn-primary btn-md" data-i18n>Back to Insights</a>
+    </div>`;
+}
+
+function renderError() {
+  document.getElementById('article-content').innerHTML = `
+    <div class="article-not-found">
+      <h1 data-i18n>Something went wrong</h1>
+      <p data-i18n>We could not load this article. Please try again later.</p>
+      <a href="insights.html" class="btn btn-primary btn-md" data-i18n>Back to Insights</a>
+    </div>`;
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+function escapeAttr(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+init();
