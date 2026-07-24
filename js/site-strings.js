@@ -214,6 +214,14 @@ export const SITE_STRINGS = [
   "No articles found",
   "Try a different search or category filter.",
   "Search articles…",
+  "By",
+  "← Back to Insights",
+  "Related articles",
+  "Article not found",
+  "The article you are looking for may have been moved or is no longer available.",
+  "Back to Insights",
+  "Something went wrong",
+  "We could not load this article. Please try again later.",
   "Find a credentialed coach",
   "Find a mentor for coaches",
   "Find a supervisor for coaches",
@@ -306,7 +314,6 @@ export const SITE_STRINGS = [
   "Thank you! We’ll be in touch soon.",
   "Retake Assessment",
   "Loading articles…",
-  "By",
 ];
 
 export const TARGET_LANGS = ['de', 'fr', 'it'];
