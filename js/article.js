@@ -4,7 +4,7 @@ import {
   fetchArticleTags,
 } from './cms-data.js';
 import { mountLayout } from './layout.js';
-import { getCurrentLang, SOURCE_LANG, applyTranslations } from './i18n.js';
+import { getCurrentLang, SOURCE_LANG, applyTranslations, translateStrings } from './i18n.js';
 
 let currentArticle = null;
 
@@ -60,7 +60,7 @@ async function renderArticle(article) {
   main.innerHTML = `
     <article class="article-detail">
       <div class="article-breadcrumb">
-        <a href="insights.html">Insights</a>
+        <a href="insights.html" data-i18n>Insights</a>
         <span class="article-breadcrumb-sep">/</span>
         <span>${escapeHtml(article.category?.name || 'Article')}</span>
       </div>
@@ -72,13 +72,13 @@ async function renderArticle(article) {
         <span class="article-date">${pubDate}</span>
       </div>
       ${heroImg}
-      <div class="article-body" data-i18n-body>${article.body || ''}</div>
+      <div class="article-body">${article.body || ''}</div>
       ${tagHtml}
+      <div class="article-back">
+        <a href="insights.html" class="btn btn-secondary btn-md" data-i18n>&larr; Back to Insights</a>
+      </div>
     </article>
-    ${related.length > 0 ? renderRelated(related) : ''}
-    <div class="article-back">
-      <a href="insights.html" class="btn btn-secondary btn-md" data-i18n>&larr; Back to Insights</a>
-    </div>`;
+    ${related.length > 0 ? renderRelated(related) : ''}`;
 
   if (isTranslated) {
     await translateArticleContent(lang);
@@ -102,29 +102,18 @@ async function translateArticleContent(lang) {
   if (excerptEl) texts.push(excerptEl.textContent.trim());
   if (catEl && catEl.textContent.trim()) texts.push(catEl.textContent.trim());
   if (authorEl) texts.push(authorEl.textContent.trim());
+  if (bodyEl && bodyEl.innerHTML.trim()) texts.push(bodyEl.innerHTML.trim());
 
-  // Extract plain text from body paragraphs for translation
-  const bodyTexts = [];
-  if (bodyEl) {
-    bodyEl.querySelectorAll('p, h2, h3, li, blockquote').forEach(el => {
-      const t = el.textContent.trim();
-      if (t) bodyTexts.push({ el, text: t });
-    });
-  }
-
-  const allTexts = [...texts, ...bodyTexts.map(b => b.text)];
-  if (allTexts.length === 0) return;
+  if (texts.length === 0) return;
 
   try {
-    const translated = await translateStrings(allTexts, SOURCE_LANG, lang);
+    const translated = await translateStrings(texts, SOURCE_LANG, lang);
     let idx = 0;
     if (titleEl) { titleEl.textContent = translated[idx++]; }
     if (excerptEl) { excerptEl.textContent = translated[idx++]; }
     if (catEl && catEl.textContent.trim()) { catEl.textContent = translated[idx++]; }
     if (authorEl) { authorEl.textContent = translated[idx++]; }
-    bodyTexts.forEach(({ el }) => {
-      el.textContent = translated[idx++];
-    });
+    if (bodyEl && bodyEl.innerHTML.trim()) { bodyEl.innerHTML = translated[idx++]; }
   } catch {
     // Fall back to source text — UI still works
   }
