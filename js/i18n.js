@@ -2,8 +2,8 @@ import { supabase } from './supabase-client.js';
 
 export const LANGS = ['en', 'de', 'fr', 'it'];
 export const LANG_LABELS = { en: 'EN', de: 'DE', fr: 'FR', it: 'IT' };
-export const LANG_NATIVE = { en: 'English', de: 'Deutsch', fr: 'Français', it: 'Italiano' };
-export const SOURCE_LANG = 'en';
+const LANG_NATIVE = { en: 'English', de: 'Deutsch', fr: 'Français', it: 'Italiano' };
+const SOURCE_LANG = 'en';
 const STORAGE_KEY = 'icf-lang';
 
 const translateEndpoint = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/translate`;
@@ -12,17 +12,17 @@ const translateHeaders = {
   'Content-Type': 'application/json',
 };
 
-export function getCurrentLang() {
+function getCurrentLang() {
   const saved = localStorage.getItem(STORAGE_KEY);
   if (saved && LANGS.includes(saved)) return saved;
   return SOURCE_LANG;
 }
 
-export function setCurrentLang(lang) {
+function setCurrentLang(lang) {
   localStorage.setItem(STORAGE_KEY, lang);
 }
 
-export async function translateStrings(texts, sourceLang, targetLang) {
+async function translateStrings(texts, sourceLang, targetLang) {
   if (!texts || texts.length === 0) return [];
   if (sourceLang === targetLang) return [...texts];
 
@@ -58,7 +58,7 @@ function cacheFor(sourceLang, targetLang) {
 
 const DB_CHUNK = 40;
 
-export async function translateBatch(texts, targetLang, sourceLang = SOURCE_LANG) {
+async function translateBatch(texts, targetLang, sourceLang = SOURCE_LANG) {
   const result = new Map();
   const unique = Array.from(new Set((texts || []).filter((t) => typeof t === 'string' && t.length > 0)));
   if (sourceLang === targetLang) {
@@ -148,7 +148,7 @@ function collectTranslatable(root) {
   return items;
 }
 
-export async function applyTranslations(targetLang, root) {
+async function applyTranslations(targetLang, root) {
   if (targetLang === SOURCE_LANG) {
     restoreOriginals(root);
     document.documentElement.setAttribute('lang', SOURCE_LANG);
@@ -232,7 +232,7 @@ function restoreOriginals(root) {
   }
 }
 
-export function updateSwitcherActive(lang) {
+function updateSwitcherActive(lang) {
   document.querySelectorAll('[data-lang-switch]').forEach((el) => {
     el.classList.toggle('active', el.getAttribute('data-lang-switch') === lang);
   });
@@ -243,7 +243,7 @@ export function updateSwitcherActive(lang) {
   });
 }
 
-export async function setLanguage(lang) {
+async function setLanguage(lang) {
   if (!LANGS.includes(lang)) return;
   setCurrentLang(lang);
   updateSwitcherActive(lang);
