@@ -1,0 +1,300 @@
+
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+
+<h2 class="sr-only">ICF Switzerland website wireframe in official 2026 brand — navigate pages and expand sections</h2>
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+#icf-root{font-family:'Plus Jakarta Sans',sans-serif;background:#f8f0e4}
+.icf-nav{background:#212251;padding:10px 16px;border-radius:12px 12px 0 0;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.icf-logo-mark{background:#5778fa;border-radius:50%;width:10px;height:10px;flex-shrink:0}
+.icf-logo-text{font-family:'Nunito',sans-serif;font-weight:700;font-size:20px;color:#ffffff;letter-spacing:-0.5px;line-height:1}
+.icf-logo-sub{font-size:9px;color:#5778fa;letter-spacing:1.5px;text-transform:uppercase;display:block;margin-top:1px}
+.icf-nav-btns{display:flex;gap:3px;flex-wrap:wrap;margin-left:auto}
+.icf-nav-btn{background:transparent;border:none;color:rgba(255,255,255,0.65);font-size:11px;padding:5px 9px;border-radius:6px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;font-weight:500}
+.icf-nav-btn:hover{background:rgba(255,255,255,0.1);color:#fff}
+.icf-nav-btn.on{background:#5778fa;color:#fff}
+.icf-main{padding:16px;background:#f8f0e4;border-radius:0 0 12px 12px}
+.icf-pg-head{background:#212251;border-radius:10px;padding:20px 22px;margin-bottom:14px;position:relative;overflow:hidden}
+.icf-pg-head::before{content:'';position:absolute;right:-30px;top:-30px;width:160px;height:160px;background:#2b379b;border-radius:50%;opacity:0.4}
+.icf-pg-eyebrow{font-size:9px;letter-spacing:2px;color:#5778fa;margin-bottom:6px;text-transform:uppercase;position:relative}
+.icf-pg-title{color:#fff;font-family:'Nunito',sans-serif;font-size:20px;font-weight:700;margin-bottom:6px;position:relative}
+.icf-pg-note{color:rgba(255,255,255,0.6);font-size:12px;line-height:1.6;max-width:520px;position:relative}
+.icf-legend{background:#fff;border:0.5px solid rgba(33,34,81,0.12);border-radius:8px;padding:9px 13px;margin-bottom:12px;display:flex;flex-wrap:wrap;gap:7px;align-items:center;font-size:11px;color:#888}
+.icf-leg-pill{padding:2px 9px;border-radius:20px;font-size:11px}
+.icf-sec{border:0.5px solid rgba(33,34,81,0.12);border-left:3px solid #5778fa;border-radius:8px;margin-bottom:7px;background:#fff;overflow:hidden}
+.icf-sec-head{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;cursor:pointer;background:none;border:none;width:100%;text-align:left;font-family:'Plus Jakarta Sans',sans-serif}
+.icf-sec-head:hover{background:rgba(87,120,250,0.05)}
+.icf-type-badge{font-size:9px;font-weight:600;letter-spacing:1px;color:#2b379b;background:#e8ecff;padding:2px 7px;border-radius:3px;text-transform:uppercase;white-space:nowrap}
+.icf-sec-name{font-weight:600;font-size:13px;color:#212251;margin-left:8px}
+.icf-toggle{color:#5778fa;font-size:18px;font-weight:300;flex-shrink:0}
+.icf-sec-body{padding:4px 14px 14px;border-top:0.5px solid rgba(33,34,81,0.08)}
+.s-hl{font-weight:600;font-size:14px;color:#212251;margin:10px 0 6px}
+.s-body{font-size:12px;color:#555;line-height:1.7;margin-bottom:6px}
+.note-b{background:#fffbeb;border:0.5px solid #efcb3077;border-radius:6px;padding:7px 11px;font-size:11px;color:#7a5c00;margin-bottom:7px;line-height:1.6}
+.vis-b{background:#e8ecff;border:0.5px solid #5778fa55;border-radius:6px;padding:7px 11px;font-size:11px;color:#2b379b;margin-bottom:7px;line-height:1.6}
+.deib-b{background:#fff8e6;border:0.5px solid #efcb3088;border-left:3px solid #efcb30;border-radius:6px;padding:7px 11px;font-size:11px;color:#7a5c00;margin-bottom:7px;line-height:1.6;border-radius:0 6px 6px 0}
+.stat-box{background:#212251;border-radius:8px;padding:8px 12px;text-align:center;min-width:70px}
+.stat-v{font-size:16px;font-weight:700;color:#efcb30}
+.stat-l{font-size:10px;color:rgba(255,255,255,0.7);margin-top:2px}
+.pill-navy{display:inline-block;margin:2px 3px;padding:3px 11px;background:#212251;color:#fff;border-radius:20px;font-size:11px;font-weight:600}
+.pill-blue{display:inline-block;margin:2px 3px;padding:3px 11px;background:#5778fa;color:#fff;border-radius:20px;font-size:11px;font-weight:600}
+.pill-yellow{display:inline-block;margin:2px 3px;padding:3px 11px;background:#efcb30;color:#212251;border-radius:20px;font-size:11px;font-weight:700}
+.mini-card{border:0.5px solid rgba(33,34,81,0.12);border-radius:8px;padding:9px 12px;background:#f8f0e4}
+.mc-title{font-weight:600;font-size:13px;color:#212251;margin-bottom:3px}
+.mc-body{font-size:12px;color:#555;margin-bottom:4px;line-height:1.6}
+.mc-cta{font-size:12px;color:#5778fa;font-weight:600}
+.pillar{background:#212251;border-radius:8px;padding:9px 12px;min-width:120px;flex:1 1 120px}
+.pillar-t{font-size:11px;font-weight:700;color:#efcb30;margin-bottom:3px}
+.pillar-b{font-size:10px;color:rgba(255,255,255,0.75);line-height:1.5}
+.board-c{border:0.5px solid rgba(33,34,81,0.12);border-radius:8px;padding:7px 11px;background:#f8f0e4;min-width:130px;flex:1 1 130px}
+.board-n{font-size:12px;font-weight:600;color:#212251}
+.board-r{font-size:11px;color:#5778fa;margin-top:2px}
+.comm-active{background:#e8ecff;border:0.5px solid #5778fa44;border-radius:8px;padding:7px 11px;min-width:100px;flex:1 1 100px}
+.comm-coming{background:#f8f0e4;border:0.5px solid rgba(33,34,81,0.12);border-radius:8px;padding:7px 11px;min-width:100px;flex:1 1 100px}
+.comm-n{font-size:12px;font-weight:600;color:#212251}
+.comm-l{font-size:11px;color:#555;margin-top:2px}
+.comm-s-a{font-size:11px;color:#2b379b;margin-top:3px}
+.comm-s-c{font-size:11px;color:#888;margin-top:3px}
+.tab-item{border:0.5px solid rgba(33,34,81,0.12);border-radius:8px;padding:8px 11px;background:#f8f0e4;margin-bottom:5px}
+.tab-l{font-size:11px;font-weight:600;color:#5778fa;margin-bottom:3px}
+.tab-b{font-size:12px;color:#555;line-height:1.6}
+.tl-row{display:flex;align-items:center;gap:10px;padding:5px 0;border-bottom:0.5px solid rgba(33,34,81,0.08)}
+.tl-d{background:#5778fa;color:#fff;border-radius:4px;padding:2px 7px;font-size:10px;font-weight:600;min-width:52px;text-align:center}
+.tl-t{font-size:12px;font-weight:600;color:#212251;flex:1}
+.tl-l{font-size:11px;color:#888}
+.cred-i{border:0.5px solid rgba(33,34,81,0.12);border-radius:8px;padding:8px 11px;background:#f8f0e4;margin-bottom:5px}
+.cred-l{font-size:12px;font-weight:600;color:#212251;margin-bottom:3px}
+.cred-b{font-size:11px;color:#555;line-height:1.6}
+.icf-footer{margin-top:16px;padding:16px 18px;background:#212251;border-radius:10px}
+.ft{color:#5778fa;font-weight:700;margin-bottom:8px;font-size:12px;font-family:'Nunito',sans-serif}
+.fi{color:rgba(255,255,255,0.6);font-size:11px;line-height:2}
+.fi strong{color:#efcb30;font-weight:600}
+</style>
+
+<div id="icf-root">
+  <div class="icf-nav">
+    <div class="icf-logo-mark"></div>
+    <div>
+      <span class="icf-logo-text">icf</span>
+      <span class="icf-logo-sub">Switzerland Chapter</span>
+    </div>
+    <div class="icf-nav-btns" id="nav-btns"></div>
+  </div>
+  <div class="icf-main" id="page-content"></div>
+</div>
+
+<script>
+const PAGES={
+  home:{label:'Home',note:'Primary entry point — serves 3 audiences: coaches joining, organisations seeking coaching, returning members.',sections:[
+    {name:'Hero',type:'full-bleed',headline:"Switzerland's home for professional coaching",body:'Connects, develops and advocates for certified coaches — in every language, every region. A community where every coach belongs.',visual:'Full-width photography: diverse group of coaches in session. Deep blue overlay. Language toggle EN | FR | DE | IT top-right.',note:'Hero rotates 3 audience stories every 6s. Diverse imagery policy: photos should reflect the full range of backgrounds, ages, and identities in our community.',ctas:['Find a Coach','Become a Member','Upcoming Events']},
+    {name:'Impact numbers bar',type:'stats-strip',note:'Deep blue bar, yellow numbers. Instantly establishes credibility.',stats:[{v:'487',l:'Members'},{v:'7',l:'Communities'},{v:'62+',l:'Events / year'},{v:'61%',l:'ICF Credentialed'},{v:'4',l:'Languages'}]},
+    {name:'Audience pathways',type:'3-column cards',headline:'What brings you here?',cards:[{t:'I\'m a professional coach',b:'Join a diverse, welcoming community of credentialed coaches. Events, peer learning, ethics support and your professional home.',cta:'Explore Membership'},{t:'I\'m looking for a coach',b:'Find ICF-certified coaches across Switzerland — matched to your language, region and coaching needs.',cta:'Find a Coach'},{t:'I\'m new to coaching',b:'Learn what professional coaching is, how credentials work, and why ethical standards matter.',cta:'What is Coaching?'}]},
+    {name:'Upcoming events strip',type:'event-strip',body:'Next 3 events as cards — date chip, title, format badge (In-person / Virtual), community tag, language.',note:'Top analytics page — keep events prominent on homepage.',cta:'View Full Calendar'},
+    {name:'Communities map',type:'map-visual',headline:'Active communities across Switzerland',body:'From Basel to Geneva, Zurich to Ticino — connect with coaches in your region, in your language.',regions:['Zurich','Geneva','Lausanne','Basel','Bern','Svizzera Italiana','Ost-Schweiz (coming)','Valais (coming)'],cta:'Find My Community'},
+    {name:'Why choose an ICF-certified coach?',type:'editorial split',headline:'Why choose an ICF-certified coach?',body:'ICF credentials signal rigorous training, supervised hours and a commitment to ethical, inclusive practice — the global gold standard.',visual:'Warm photography: coaching session with diverse participants.',cta:'Learn About ICF Credentials'},
+    {name:'Our commitment to inclusion',type:'DEIB feature',headline:'A community where everyone belongs',body:'ICF Switzerland is actively committed to Diversity, Equity, Inclusion and Belonging (DEIB). Our community spans 4 languages, multiple nationalities, and a rich range of coaching methodologies. We work to ensure that every coach — and every coaching client — feels seen, valued and welcome.',deib:true,cta:'Learn about our DEIB commitment'},
+    {name:'Latest news / insights',type:'3-cards',body:'3 most recent posts. Tags: News | Event Recap | Member Spotlight | Ethics | AI & Coaching | DEIB.',cta:'Read More'},
+    {name:'Partner logos strip',type:'logo-strip',body:'ICF Global · ZHAW · HR Festival · BSO · ICF UK/DE/Slovakia.',note:'Bone/off-white background. Signals ecosystem credibility.'},
+  ]},
+  about:{label:'About ICFS',note:'Builds trust and credibility. Key for coaches evaluating membership and organisations evaluating ICF.',sections:[
+    {name:'Page hero',headline:'A Charter Chapter of ICF Global',body:'The official Swiss chapter of the International Coaching Federation — the world\'s largest coaching professional body, present across all of Switzerland\'s languages and regions.',visual:'Team collage photo. Visually represents our multilingual, diverse volunteer community.'},
+    {name:'Mission + strategic pillars',type:'text + pillars',headline:'Our mission',body:'ICF Switzerland strengthens the quality, relevance and visibility of professional coaching. We are a welcoming, inclusive professional home for coaches across all regions and languages — advancing ethical practice, belonging, and coaching\'s positive impact on society.',pillars:[{t:'Excellence & Ethics',b:'Professional standards and credential support'},{t:'Community & Belonging',b:'Inclusive home for all coaches across 7+ communities'},{t:'Societal Impact',b:'Coaching in organisations, education, NGOs'},{t:'Ecosystem & Partnerships',b:'Collaboration and thought leadership'},{t:'Communication & Visibility',b:'One clear voice for coaching in Switzerland'}]},
+    {name:'Our DEIB commitment',type:'DEIB dedicated section',headline:'Diversity, Equity, Inclusion and Belonging',body:'DEIB is embedded in everything we do — not a side initiative, but a core value. Our chapter spans 4 languages, multiple nationalities, and a rich variety of coaching backgrounds. A dedicated DEIB team (led by Alessandra B. Nunes and Thelan Nguyen) drives our strategy: inclusive events, neurodiversity awareness, an Inclusive Coaching Inspiration Kit, and DEIB Open Houses. We measure our progress annually through our member survey and dedicated DEIB survey.',deib:true,items:['Quarterly DEIB Open House events — peer learning with real cases','Inclusive Coaching Inspiration Kit for all members','Event Accessibility Checklist (hybrid, captioning, sensory needs, affordability)','Neurodiversity & Inclusion webinars and member stories','DEIB questions embedded in annual member survey','Alignment with ICF Global DEIB initiatives'],cta:'Read our DEIB approach'},
+    {name:'Board & volunteer team',type:'team grid',headline:'Board & volunteer team',note:'Photo, name, role, LinkedIn icon per board member. Visually diverse team grid. Project leads listed below.',board:[{n:'Albina Koch, PCC ICF',r:'President'},{n:'Hartmuth Gieldanowski',r:'President Elect'},{n:'Lilly Sitzler Spicher',r:'Treasurer & Strategic Partnerships'},{n:'Beril Esendal',r:'Membership Engagement'},{n:'Alessandra B. Nunes',r:'HR & DEIB'},{n:'Susan Mackay',r:'Communications & Marketing'},{n:'Natacha Andenmatten',r:'Ethics'}]},
+    {name:'Governance',type:'accordion',items:['Annual General Meeting (AGM)','Code of Ethics','DEIB Commitment Statement','ICF Global Charter Chapter status','Annual Report / Impact Review']},
+    {name:'Contact',headline:'Get in touch',body:'info@coachingfederation.ch — community emails listed on Communities page.',cta:'Contact Us Form'},
+  ]},
+  coaches:{label:'For Coaches',note:'Highest-value page for members. Full journey: join → learn → credential → connect → lead.',sections:[
+    {name:'Page hero',headline:'Your professional home in Switzerland',body:'Whether freshly credentialed or a seasoned MCC — a welcoming community for coaches of all backgrounds, languages and methodologies.'},
+    {name:'Why join? — membership benefits',type:'benefit list',headline:'Membership benefits',items:['62+ events per year: networking, learning, ethics, peer coaching','Community in your region (Zurich, Geneva, Lausanne, Basel, Bern, Ticino, Ost-Schweiz)','Events in EN, FR, DE and IT — join in your language','Professional development webinars and CCEUs for credential renewal','Peer coaching and Coaching Gym formats','Member directory listing (Find a Coach visibility)','Town Halls, Board Coffee and governance participation','Ethics support and ICF credentialing guidance','Access to ICF Global — Converge Summit and global resources'],cta:'Join as a Member (links to ICF Global portal)'},
+    {name:'Learning & development',type:'tabs',tabs:[{l:'Professional Dev.',b:'Webinars and masterclasses: Executive Leadership, AI in Coaching, Neurodiversity & Inclusion, Team Coaching, Business Development.'},{l:'Ethics',b:'3 in-person + 2 virtual ethics events in 2026. Reflect, discuss dilemmas, earn CCEUs. Led by Natacha Andenmatten.'},{l:'DEIB',b:'Quarterly DEIB Open Houses. Inclusive Coaching Inspiration Kit. Neurodiversity webinars. Member stories. Resources for coaching across diverse contexts.'},{l:'Peer Coaching',b:'Structured peer coaching cycles, Coaching Gyms, Open Space formats. Multi-language, across communities.'},{l:'Credentials',b:'ICF credentialing info sessions (ACC / PCC / MCC). Step-by-step guides. 2 credentialing webinars per year.'},{l:'AI in Coaching',b:'Working group led by Nicola Simionato. AI tools, ethics of AI in practice, member education.'}]},
+    {name:'DEIB in your practice',type:'DEIB in-context',headline:'Coaching across difference',body:'Our DEIB resources help you coach across cultures, languages and identities — with competence and care. Access our Inclusive Coaching Inspiration Kit, attend a DEIB Open House, or join a neurodiversity-focused learning session.',deib:true,cta:'Explore DEIB Resources'},
+    {name:'Volunteer & lead',headline:'Shape the future of coaching in Switzerland',body:'Lead a community, join a project team, host events or contribute to DEIB, ethics and communications. Leadership roles open across all regions and languages.',cta:'Get Involved'},
+    {name:'Member stories',type:'testimonial carousel',note:'3 rotating member quotes: photo, name, credential, community, language. Intentionally diverse selection reflecting different backgrounds, coaching styles and regions.',deib:true},
+  ]},
+  orgs:{label:'For Organisations',note:'New 2026 strategic priority. Targets HR, L&D, NGOs and education. Currently absent from site.',sections:[
+    {name:'Page hero',headline:'Embed professional coaching in your organisation',body:'ICF Switzerland connects HR and L&D teams with certified coaches and evidence-based coaching programmes — for organisations, NGOs and educational institutions across Switzerland.'},
+    {name:'Why ICF-certified coaching?',type:'value prop',items:['Verified credentials: ACC, PCC and MCC coaches meet rigorous global standards','Ethical, inclusive practice: ICF Code of Ethics governs all member coaches','Swiss expertise: coaches fluent in EN, FR, DE and IT across all industries and sectors','Diverse coach pool: match by background, language, sector and methodology','Pro-bono programmes available for NGOs and international organisations']},
+    {name:'Coaching in Organisations',type:'project card',headline:'Coaching in organisations project',body:'Led by Hartmuth Gieldanowski. Partnership with ICF UK, Germany and Slovakia. Supporting organisations to integrate coaching culture, develop internal coaching capability and measure impact.',cta:'Get in Touch'},
+    {name:'Coaching in Education',type:'project card',headline:'Coaching in education',body:'Pan-European initiative led by ICF Switzerland. Bringing coaching into schools and universities — empowering teachers and students, with a particular focus on underprivileged communities and equitable access. Pilot underway with Swiss institutions.',deib:true,cta:'Learn More'},
+    {name:'Coaching for IOs & NGOs',type:'project card',headline:'Coaching for international organisations & NGOs',body:'Led by Saba Imru-Mathieu, PCC ICF. Pro-bono programmes for Geneva-based IOs and NGOs. Supporting resilience, leadership and wellbeing. Culturally aware coaching for high-pressure, diverse international environments.',deib:true,cta:'Contact us about Pro Bono Coaching'},
+    {name:'Find a Coach CTA',headline:'Ready to find a certified coach?',cta:'Search the Coach Directory'},
+    {name:'Events & presence',headline:'Meet us at Swiss HR events',body:'ICF Switzerland is present at HR Festival Zurich, BSO Conference, Swiss Coaching Day and ZHAW Conference.',cta:'See Upcoming Events'},
+  ]},
+  communities:{label:'Communities',note:'High-engagement page — local feel is core to member value. Warm, active, inclusive.',sections:[
+    {name:'Page hero',headline:'Find your coaching community',body:'Connect with coaches in your region, in your language. Each community is a welcoming space for professional exchange — wherever you are in Switzerland, you belong here.',deib:true},
+    {name:'Community map + selector',type:'interactive map / tabs',headline:'Select a community',note:'Clickable Switzerland map + card selector. Each community card shows: leader, contact email, languages spoken, upcoming events, DEIB note, join CTA.',communities:[{n:'Zurich',l:'EN / DE',s:'active'},{n:'Geneva',l:'EN / FR',s:'active'},{n:'Lausanne',l:'FR / EN',s:'active'},{n:'Basel',l:'DE / EN',s:'active'},{n:'Bern',l:'DE / EN / FR',s:'launched 2026'},{n:'Svizzera Italiana',l:'IT / EN',s:'active'},{n:'Ost-Schweiz',l:'DE',s:'coming 2026'},{n:'Valais',l:'FR / DE',s:'coming 2026'}]},
+    {name:'What happens in a community?',headline:'Community activities',items:['Monthly networking and apéro events','Peer coaching sessions and Coaching Gyms','Local ethics discussions','Professional development workshops','DEIB Open House events (quarterly)','Town Hall participation (open to all)','Coffee with the Board (quarterly)']},
+    {name:'Language & inclusion note',type:'DEIB in-context',headline:'A community for all — in all four languages',body:'Our events run in English, French, German and Italian. We work to ensure every coach — regardless of language, background or coaching methodology — feels genuinely welcome.',deib:true},
+    {name:'National chapter events',headline:'National events',items:['Quarterly Town Halls (open to all members and non-members)','Coffee with the Board (quarterly, for members)','AGM — March, Geneva','International Coaching Week — May'],cta:'View full event calendar'},
+  ]},
+  events:{label:'Events',note:'Top-visited page per analytics. Easy to filter. Open to members and non-members.',sections:[
+    {name:'Page hero + filters',headline:'Events calendar',body:'In-person and virtual events across Switzerland — in English, French, German and Italian.',filters:['All','In-Person','Virtual','Community','National','Ethics','Professional Dev.','DEIB','Free / Pro Bono']},
+    {name:'Upcoming events grid',type:'filterable grid',body:'Card grid: date chip, title, format badge, community tag, language badge, brief description, Register CTA.',note:'Language badge on every event card: EN | FR | DE | IT. Non-members can view and register.'},
+    {name:'Recurring formats',headline:'Regular formats',items:['Monthly community networking events (all 7 communities)','Quarterly Town Halls — open to all','Quarterly Coffee with the Board — members','Quarterly DEIB Open Houses','Peer Coaching Cycles — Zurich and online','Annual AGM — March','International Coaching Week — May']},
+    {name:'Key 2026 dates',type:'timeline',timeline:[{d:'Jan 16',t:'Bern Community Kick-off',l:'Bern'},{d:'Mar 13',t:'AGM',l:'Geneva'},{d:'Mar 24/25',t:'HR Festival',l:'Zurich'},{d:'Apr 23',t:'Swiss Coaching Day',l:'Bern'},{d:'May 11-17',t:'International Coaching Week',l:'Virtual + In-person'},{d:'May 17-19',t:'ICF Converge Summit',l:'Paris'},{d:'Sep 17',t:'ZHAW Conference',l:'Zurich'}]},
+  ]},
+  find:{label:'Find a Coach',note:'Critical public page. Top analytics. Gateway for non-members and organisations.',sections:[
+    {name:'Page hero',headline:'Find a certified coach in Switzerland',body:'All coaches in our directory hold or are working towards ICF credentials. Search by language, region, credential and coaching focus — find the right coach for you.',cta:'Search the Directory'},
+    {name:'Search & filter tool',type:'search form',headline:'Search filters',note:'Directory connects to ICF Global profile database or Bubble CRM. Results: photo, name, credential badge, languages, location, specialisms, contact/profile link.',fields:['Language (EN / FR / DE / IT / other)','Region (Zurich, Geneva, Lausanne, Basel, Bern, Ticino, Valais, Online)','Credential level (ACC / PCC / MCC / All)','Coaching focus (Executive, Leadership, Life, Team, Career, Systemic, DEIB-focused)','Format (In-person / Online / Both)']},
+    {name:'How to choose a coach',headline:'How to choose a coach',steps:['Search by language, region and coaching focus','Review coach profiles and credentials','Book a chemistry call — most coaches offer a free intro session','Begin your coaching journey']},
+    {name:'ICF credentials explained',type:'accordion',creds:[{l:'ACC — Associate Certified Coach',b:'Min. 60 coaching hours + ICF-approved training. Entry-level credential.'},{l:'PCC — Professional Certified Coach',b:'Min. 500 hours + demonstrated competency. Most common among Swiss coaches.'},{l:'MCC — Master Certified Coach',b:'Min. 2,500 coaching hours. Highest ICF credential level.'}]},
+    {name:'Inclusive coaching note',type:'DEIB in-context',headline:'Find a coach who understands your context',body:'Our coaches come from diverse professional and personal backgrounds. You can search for coaches with specific cultural competence, multilingual capability, or focus areas such as neurodiversity and inclusion.',deib:true},
+    {name:'For organisations CTA',headline:'Looking for multiple coaches?',body:'Contact us for bespoke introductions to coaches with organisational and team coaching expertise.',cta:'Contact ICF Switzerland'},
+  ]}
+};
+
+const keys=Object.keys(PAGES);
+let active='home',open={};
+
+function pill(t,cls){return`<span class="${cls}" style="margin:2px 3px">${t}</span>`}
+
+function sBody(s){
+  let h='';
+  if(s.headline) h+=`<div class="s-hl">${s.headline}</div>`;
+  if(s.body) h+=`<div class="s-body">${s.body}</div>`;
+  if(s.deib&&s.name!=='Inclusive coaching note'&&s.name!=='Language & inclusion note'&&s.name!=='DEIB in your practice'&&!s.type?.includes('DEIB')&&s.type!=='DEIB feature'&&s.type!=='DEIB dedicated section'&&s.type!=='DEIB in-context'){
+    h+=`<div class="deib-b"><strong>DEIB note:</strong> Inclusive photography and language apply here. Reflect the diversity of our community.</div>`;
+  }
+  if(s.type?.includes('DEIB')||s.type==='DEIB feature'||s.type==='DEIB dedicated section'||s.type==='DEIB in-context'){
+    h+=`<div class="deib-b"><strong>DEIB placement:</strong> This section is a dedicated or highlighted DEIB touchpoint. Use the yellow accent (#efcb30) as a subtle visual signal — not a banner, just warmth.</div>`;
+  }
+  if(s.note) h+=`<div class="note-b"><strong>Design note:</strong> ${s.note}</div>`;
+  if(s.visual) h+=`<div class="vis-b"><strong>Visual:</strong> ${s.visual}</div>`;
+  if(s.ctas) h+=`<div style="margin-bottom:8px">${s.ctas.map(c=>pill(c,'pill-navy')).join('')}</div>`;
+  if(s.cta) h+=`<div style="margin-bottom:8px">${pill('→ '+s.cta,'pill-blue')}</div>`;
+  if(s.stats){
+    h+=`<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">`;
+    s.stats.forEach(st=>h+=`<div class="stat-box"><div class="stat-v">${st.v}</div><div class="stat-l">${st.l}</div></div>`);
+    h+='</div>';
+  }
+  if(s.cards){
+    h+=`<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px">`;
+    s.cards.forEach(c=>h+=`<div class="mini-card"><div class="mc-title">${c.t}</div><div class="mc-body">${c.b}</div><span class="mc-cta">→ ${c.cta}</span></div>`);
+    h+='</div>';
+  }
+  if(s.pillars){
+    h+=`<div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:8px">`;
+    s.pillars.forEach(p=>h+=`<div class="pillar"><div class="pillar-t">${p.t}</div><div class="pillar-b">${p.b}</div></div>`);
+    h+='</div>';
+  }
+  if(s.board){
+    h+=`<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">`;
+    s.board.forEach(m=>h+=`<div class="board-c"><div class="board-n">${m.n}</div><div class="board-r">${m.r}</div></div>`);
+    h+='</div>';
+  }
+  if(s.communities){
+    h+=`<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">`;
+    s.communities.forEach(c=>{
+      const a=c.s==='active'||c.s.includes('2026')&&!c.s.includes('coming');
+      h+=`<div class="${a?'comm-active':'comm-coming'}"><div class="comm-n">${c.n}</div><div class="comm-l">${c.l}</div><div class="${a?'comm-s-a':'comm-s-c'}">${c.s==='active'?'● Active':c.s}</div></div>`;
+    });
+    h+='</div>';
+  }
+  if(s.items){
+    h+=`<ul style="margin:0 0 8px 16px">`;
+    s.items.forEach(i=>h+=`<li style="font-size:12px;color:#555;margin-bottom:3px;line-height:1.6">${i}</li>`);
+    h+='</ul>';
+  }
+  if(s.tabs){
+    s.tabs.forEach(t=>{
+      const isDEIB=t.l==='DEIB';
+      h+=`<div class="tab-item" style="${isDEIB?'border-left:3px solid #efcb30;border-radius:0 8px 8px 0;background:#fff8e6':''}">
+        <div class="tab-l" style="${isDEIB?'color:#7a5c00':''}">${t.l}${isDEIB?' ★':''}</div>
+        <div class="tab-b">${t.b}</div></div>`;
+    });
+  }
+  if(s.timeline){
+    h+=`<div style="margin-bottom:8px">`;
+    s.timeline.forEach(e=>h+=`<div class="tl-row"><span class="tl-d">${e.d}</span><span class="tl-t">${e.t}</span><span class="tl-l">${e.l}</span></div>`);
+    h+='</div>';
+  }
+  if(s.filters){
+    h+=`<div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px">`;
+    s.filters.forEach((f,i)=>{
+      const isDEIB=f==='DEIB';
+      h+=`<span style="padding:3px 10px;border-radius:20px;font-size:11px;background:${i===0?'#212251':isDEIB?'#efcb30':'#f8f0e4'};color:${i===0?'#fff':isDEIB?'#212251':'#555'};border:0.5px solid ${i===0?'#212251':isDEIB?'#efcb30':'rgba(33,34,81,0.15)'};font-weight:${isDEIB?700:500}">${f}</span>`;
+    });
+    h+='</div>';
+  }
+  if(s.regions){
+    h+=`<div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px">`;
+    s.regions.forEach(r=>{
+      const c=r.includes('coming');
+      h+=`<span style="padding:3px 11px;border-radius:20px;font-size:12px;background:${c?'#f8f0e4':'#e8ecff'};color:${c?'#888':'#2b379b'};border:0.5px solid ${c?'rgba(33,34,81,0.12)':'#5778fa44'};font-weight:${c?400:600}">${r}</span>`;
+    });
+    h+='</div>';
+  }
+  if(s.fields){
+    h+=`<div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px">`;
+    s.fields.forEach(f=>{
+      const isDEIB=f.includes('DEIB');
+      h+=`<span style="padding:3px 10px;background:${isDEIB?'#fff8e6':'#f8f0e4'};border:0.5px solid ${isDEIB?'#efcb3077':'rgba(33,34,81,0.12)'};border-radius:20px;font-size:11px;color:${isDEIB?'#7a5c00':'#555'}">${f}</span>`;
+    });
+    h+='</div>';
+  }
+  if(s.steps){
+    h+=`<ol style="margin:0 0 8px 16px">`;
+    s.steps.forEach(st=>h+=`<li style="font-size:12px;color:#555;margin-bottom:3px;line-height:1.6">${st}</li>`);
+    h+='</ol>';
+  }
+  if(s.creds){
+    s.creds.forEach(c=>h+=`<div class="cred-i"><div class="cred-l">${c.l}</div><div class="cred-b">${c.b}</div></div>`);
+  }
+  return h;
+}
+
+function renderSection(pgKey,s,idx){
+  const id=pgKey+idx;
+  const isOpen=!!open[id];
+  const isDEIB=s.deib||s.type?.includes('DEIB')||s.type==='DEIB feature'||s.type==='DEIB dedicated section'||s.type==='DEIB in-context';
+  const borderColor=isDEIB?'#efcb30':'#5778fa';
+  let body='';
+  if(isOpen) body=`<div class="icf-sec-body">${sBody(s)}</div>`;
+  const tb=s.type?`<span class="icf-type-badge" style="${isDEIB?'background:#fff8e6;color:#7a5c00':''}">${s.type}</span>`:'<span class="icf-type-badge" style="background:#f8f0e4;color:#888">section</span>';
+  return `<div class="icf-sec" style="border-left-color:${borderColor}">
+    <button class="icf-sec-head" onclick="tog('${id}')">
+      <div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px">${tb}<span class="icf-sec-name">${s.name}${isDEIB?' <span style="color:#efcb30;font-size:10px">★ DEIB</span>':''}</span></div>
+      <span class="icf-toggle">${isOpen?'−':'+'}</span>
+    </button>${body}
+  </div>`;
+}
+
+function renderPage(){
+  const pg=PAGES[active];
+  let h='';
+  h+=`<div class="icf-pg-head">
+    <div class="icf-pg-eyebrow">Page wireframe & content</div>
+    <div class="icf-pg-title">${pg.label}</div>
+    <div class="icf-pg-note">${pg.note}</div>
+  </div>`;
+  h+=`<div class="icf-legend">
+    <span style="color:#888">Legend:</span>
+    <span class="icf-leg-pill" style="background:#fffbeb;border:0.5px solid #efcb3077;color:#7a5c00">Design / UX note</span>
+    <span class="icf-leg-pill" style="background:#e8ecff;border:0.5px solid #5778fa55;color:#2b379b">Visual spec</span>
+    <span class="icf-leg-pill" style="background:#fff8e6;border:0.5px solid #efcb3077;color:#7a5c00">★ DEIB touchpoint</span>
+    <span class="icf-leg-pill" style="background:#f8f0e4;border:0.5px solid rgba(33,34,81,0.12);color:#555">Content block</span>
+  </div>`;
+  pg.sections.forEach((s,i)=>h+=renderSection(active,s,i));
+  h+=`<div class="icf-footer">
+    <div class="ft">Brand & build notes</div>
+    <div class="fi"><strong>Colours:</strong> Deep Blue #212251 · Blue #2b379b · Light Blue #5778fa · Yellow #efcb30 · Bone #f8f0e4 · White #ffffff</div>
+    <div class="fi"><strong>Fonts:</strong> Headlines — Hoss Round Regular (or Nunito as web fallback) · Body — Plus Jakarta Sans</div>
+    <div class="fi"><strong>Chapter logo:</strong> ICF mark + "Switzerland" + "Chapter" in teal — use horizontal lockup as primary</div>
+    <div class="fi"><strong>Languages:</strong> EN / FR / DE / IT — all key pages need language toggle via Bubble i18n module</div>
+    <div class="fi"><strong>DEIB:</strong> ★ sections are DEIB touchpoints. Use yellow (#efcb30) as subtle accent. Diverse photography throughout. DEIB filter on Events page.</div>
+    <div class="fi"><strong>Priority pages to build first:</strong> Events · Find a Coach · Become a Member · Home</div>
+  </div>`;
+  document.getElementById('page-content').innerHTML=h;
+}
+
+function renderNav(){
+  document.getElementById('nav-btns').innerHTML=keys.map(k=>`<button class="icf-nav-btn${k===active?' on':''}" onclick="setPage('${k}')">${PAGES[k].label}</button>`).join('');
+}
+
+window.tog=function(id){open[id]=!open[id];renderPage()};
+window.setPage=function(p){active=p;open={};renderNav();renderPage()};
+
+renderNav();renderPage();
+</script>
