@@ -6,9 +6,9 @@
   <title>Find a Coach — ICF Switzerland Directory</title>
   <meta name="description" content="Search ICF Switzerland's directory of credentialed coaches, mentors and supervisors. Filter by credential, language, region and specialty.">
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%232E3192'/%3E%3Ctext x='50' y='54' font-family='sans-serif' font-size='22' font-weight='800' fill='%23ffffff' text-anchor='middle' dominant-baseline='middle'%3EICF%3C/text%3E%3Ccircle cx='50' cy='72' r='3' fill='%2300ABC8'/%3E%3C/svg%3E">
-  <script type="module" crossorigin src="./assets/findACoach-DwYIkout.js"></script>
-  <link rel="modulepreload" crossorigin href="./assets/layout-B-KBcZPI.js">
-  <link rel="stylesheet" crossorigin href="./assets/layout-D9rVI65J.css">
+  <script type="module" crossorigin src="./assets/findACoach-XMwOygGa.js"></script>
+  <link rel="modulepreload" crossorigin href="./assets/layout-B3jplCxp.js">
+  <link rel="stylesheet" crossorigin href="./assets/layout-B1bph5zf.css">
 </head>
 <body>
   <div id="header-slot"></div>
@@ -16,13 +16,13 @@
   <!-- ── PAGE HEADER ─────────────────────────────────────── -->
   <div class="page-header">
     <div class="page-header-inner">
-      <p class="icf-overline" style="margin-bottom:12px">ICF Switzerland Directory</p>
+      <p class="icf-overline" style="margin-bottom:12px" data-i18n>ICF Switzerland Directory</p>
       <h1 id="pageTitle">Find a credentialed coach</h1>
       <p id="pageSubtitle">Every coach listed holds an active ICF credential and commits to the ICF Code of Ethics.</p>
       <div class="service-tabs">
-        <button class="service-tab active" data-tab="coach">Find a coach</button>
-        <button class="service-tab" data-tab="mentor">Find a mentor</button>
-        <button class="service-tab" data-tab="supervisor">Find a supervisor</button>
+        <button class="service-tab active" data-tab="coach" data-i18n>Find a coach</button>
+        <button class="service-tab" data-tab="mentor" data-i18n>Find a mentor</button>
+        <button class="service-tab" data-tab="supervisor" data-i18n>Find a supervisor</button>
       </div>
     </div>
   </div>
@@ -32,33 +32,33 @@
     <!-- FILTER SIDEBAR -->
     <aside class="filters">
       <div class="filter-group">
-        <label class="input-label" for="searchInput">Search</label>
-        <input type="text" id="searchInput" class="icf-input" placeholder="Name, city, specialty…">
+        <label class="input-label" for="searchInput" data-i18n>Search</label>
+        <input type="text" id="searchInput" class="icf-input" placeholder="Name, city, specialty…" data-i18n-attr="placeholder">
       </div>
       <div class="sep"></div>
       <div class="filter-group">
-        <p class="filter-label">Credential</p>
+        <p class="filter-label" data-i18n>Credential</p>
         <div class="filter-tags" id="credentialFilters"></div>
       </div>
       <div class="sep"></div>
       <div class="filter-group">
-        <p class="filter-label">Language</p>
+        <p class="filter-label" data-i18n>Language</p>
         <div class="filter-tags" id="langFilters"></div>
       </div>
       <div class="sep"></div>
       <div class="filter-group">
-        <label class="input-label" for="regionSelect">Canton / Region</label>
+        <label class="input-label" for="regionSelect" data-i18n>Canton / Region</label>
         <select id="regionSelect" class="icf-select"></select>
       </div>
       <div class="sep"></div>
       <div class="filter-group">
-        <p class="filter-label">Specialty</p>
+        <p class="filter-label" data-i18n>Specialty</p>
         <div class="filter-tags" id="specialtyFilters"></div>
       </div>
       <div class="sep"></div>
       <div class="filter-group">
         <label class="icf-checkbox">
-          <input type="checkbox" id="availableOnly"> Accepting new clients
+          <input type="checkbox" id="availableOnly"> <span data-i18n>Accepting new clients</span>
         </label>
       </div>
       <div id="clearContainer"></div>
@@ -72,7 +72,7 @@
       <div class="coach-grid" id="coachGrid">
         <div class="loading-state">
           <div class="spinner"></div>
-          <p>Loading coaches…</p>
+          <p data-i18n>Loading coaches…</p>
         </div>
       </div>
     </div>
