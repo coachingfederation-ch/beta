@@ -25,6 +25,17 @@ interface CacheRow {
   target_text: string;
 }
 
+// Reuse a single client across all requests instead of creating one per call.
+const supabase = createClient(
+  Deno.env.get("SUPABASE_URL")!,
+  Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+);
+
+// Max texts per PostgREST .in() query — long URLs cause timeouts.
+const CACHE_CHUNK = 40;
+// Max texts per OpenRouter call — balance speed vs. output reliability.
+const LLM_BATCH = 25;
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { status: 200, headers: corsHeaders });
@@ -54,44 +65,45 @@ Deno.serve(async (req: Request) => {
       });
     }
     if (source_lang === target_lang) {
-      // No translation needed — return the source text as-is.
       return new Response(JSON.stringify({ translations: texts }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // De-duplicate input while preserving order and indexes for the response.
     const uniqueTexts = Array.from(new Set(texts.filter((t) => typeof t === "string" && t.length > 0)));
 
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    );
-
-    // 1. Look up cached translations for the texts we already have.
     const cache = new Map<string, string>();
-    if (uniqueTexts.length > 0) {
-      const { data: cached, error: cacheErr } = await supabase
-        .from("translations")
-        .select("source_text, target_text")
-        .eq("source_lang", source_lang)
-        .eq("target_lang", target_lang)
-        .in("source_text", uniqueTexts);
 
-      if (cacheErr) throw cacheErr;
-      for (const row of (cached as CacheRow[]) || []) {
-        cache.set(row.source_text, row.target_text);
+    // 1. Look up cached translations — chunk to avoid URL length limits.
+    if (uniqueTexts.length > 0) {
+      const cacheChunks: Promise<{ data: CacheRow[] | null; error: any }>[] = [];
+      for (let i = 0; i < uniqueTexts.length; i += CACHE_CHUNK) {
+        const chunk = uniqueTexts.slice(i, i + CACHE_CHUNK);
+        cacheChunks.push(
+          supabase
+            .from("translations")
+            .select("source_text, target_text")
+            .eq("source_lang", source_lang)
+            .eq("target_lang", target_lang)
+            .in("source_text", chunk),
+        );
+      }
+      const results = await Promise.all(cacheChunks);
+      for (const { data, error } of results) {
+        if (error) throw error;
+        for (const row of data || []) {
+          cache.set(row.source_text, row.target_text);
+        }
       }
     }
 
     // 2. Figure out which texts still need translating.
     const toTranslate = uniqueTexts.filter((t) => !cache.has(t));
 
-    // 3. Translate the missing ones via OpenRouter.
+    // 3. Translate missing texts via OpenRouter — batches run in PARALLEL.
     if (toTranslate.length > 0) {
       const apiKey = Deno.env.get("OPENROUTER_API_KEY");
       if (!apiKey) {
-        // No key configured — fall back to source text so the site never breaks.
         for (const t of toTranslate) cache.set(t, t);
       } else {
         const model = Deno.env.get("OPENROUTER_MODEL") || "openai/gpt-4o-mini";
@@ -106,56 +118,60 @@ Deno.serve(async (req: Request) => {
           `"Basel", "Bern", "Ticino", "Romandie"). Keep them as-is. ` +
           `Return ONLY the ${targetName} translation, with no quotes, no commentary and no preamble.`;
 
-        // Translate in small batches to keep the LLM focused and reliable.
-        const BATCH = 12;
-        for (let i = 0; i < toTranslate.length; i += BATCH) {
-          const batch = toTranslate.slice(i, i + BATCH);
-          // Numbered list so the model returns one translation per input line,
-          // in the same order — easy to split reliably.
+        // Build all batch promises, then fire them in parallel.
+        const batchPromises: Promise<void>[] = [];
+        for (let i = 0; i < toTranslate.length; i += LLM_BATCH) {
+          const batch = toTranslate.slice(i, i + LLM_BATCH);
           const numbered = batch.map((t, idx) => `${idx + 1}. ${t}`).join("\n");
           const userPrompt =
             `Translate each of the following ${batch.length} ${LANG_NAMES[source_lang]} ` +
             `strings into ${targetName}. Return them as a numbered list in the SAME order, ` +
             `one per line, with no extra text:\n\n${numbered}`;
 
-          const apiResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-            method: "POST",
-            headers: {
-              "Authorization": `Bearer ${apiKey}`,
-              "Content-Type": "application/json",
-              "HTTP-Referer": "https://icf-switzerland.ch",
-              "X-Title": "ICF Switzerland Translation",
-            },
-            body: JSON.stringify({
-              model,
-              messages: [
-                { role: "system", content: systemPrompt },
-                { role: "user", content: userPrompt },
-              ],
-              temperature: 0.2,
-            }),
-          });
+          batchPromises.push(
+            (async () => {
+              try {
+                const apiResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+                  method: "POST",
+                  headers: {
+                    "Authorization": `Bearer ${apiKey}`,
+                    "Content-Type": "application/json",
+                    "HTTP-Referer": "https://icf-switzerland.ch",
+                    "X-Title": "ICF Switzerland Translation",
+                  },
+                  body: JSON.stringify({
+                    model,
+                    messages: [
+                      { role: "system", content: systemPrompt },
+                      { role: "user", content: userPrompt },
+                    ],
+                    temperature: 0.2,
+                  }),
+                });
 
-          if (!apiResponse.ok) {
-            // On API failure, fall back to source text for this batch only.
-            for (const t of batch) cache.set(t, t);
-            continue;
-          }
+                if (!apiResponse.ok) {
+                  for (const t of batch) cache.set(t, t);
+                  return;
+                }
 
-          const apiJson = await apiResponse.json();
-          const content: string = apiJson?.choices?.[0]?.message?.content ?? "";
+                const apiJson = await apiResponse.json();
+                const content: string = apiJson?.choices?.[0]?.message?.content ?? "";
+                const lines = content.split("\n").map((l) => l.trim()).filter(Boolean);
 
-          // Parse the numbered list back out, preserving order.
-          const lines = content.split("\n").map((l) => l.trim()).filter(Boolean);
-          for (let j = 0; j < batch.length; j++) {
-            const expectedPrefix = `${j + 1}.`;
-            // Find the line that starts with "N." for this index.
-            const line = lines.find((l) => l.startsWith(expectedPrefix + " ") || l.startsWith(expectedPrefix + ".")) || "";
-            const translated = line ? line.replace(new RegExp(`^${j + 1}\\.[\\s]*`), "").trim() : batch[j];
-            // If parsing failed for a line, fall back to source.
-            cache.set(batch[j], translated || batch[j]);
-          }
+                for (let j = 0; j < batch.length; j++) {
+                  const expectedPrefix = `${j + 1}.`;
+                  const line = lines.find((l) => l.startsWith(expectedPrefix + " ") || l.startsWith(expectedPrefix + ".")) || "";
+                  const translated = line ? line.replace(new RegExp(`^${j + 1}\\.[\\s]*`), "").trim() : batch[j];
+                  cache.set(batch[j], translated || batch[j]);
+                }
+              } catch {
+                for (const t of batch) cache.set(t, t);
+              }
+            })(),
+          );
         }
+
+        await Promise.all(batchPromises);
 
         // 4. Persist the freshly translated texts to the memory bank.
         const rows = toTranslate
@@ -168,16 +184,10 @@ Deno.serve(async (req: Request) => {
           }));
 
         if (rows.length > 0) {
-          // upsert handles the rare race where another instance cached the same
-          // text in the same moment.
           const { error: insertErr } = await supabase
             .from("translations")
             .upsert(rows, { onConflict: "source_lang,target_lang,source_text", ignoreDuplicates: true });
-          if (insertErr) {
-            // Insert failure is non-fatal — we already have the translations in
-            // memory for this response; next request will just retranslate.
-            console.error("translation insert error:", insertErr.message);
-          }
+          if (insertErr) console.error("translation insert error:", insertErr.message);
         }
       }
     }
